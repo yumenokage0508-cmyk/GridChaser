@@ -1,0 +1,15 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+*.pidb
+*.suo
+*.sln
+*.csproj
+*.userprefs
+*.unityproj
+.DS_Store
+Thumbs.db
