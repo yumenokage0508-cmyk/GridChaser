@@ -1,0 +1,89 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Studio\\Project\\GridChaser\\GridChaser\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|D:\\Studio\\Project\\GridChaser\\GridChaser\\assets\\scripts\\enemymanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\enemymanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|D:\\Studio\\Project\\GridChaser\\GridChaser\\assets\\scripts\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|D:\\Studio\\Project\\GridChaser\\GridChaser\\assets\\scripts\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|D:\\Studio\\Project\\GridChaser\\GridChaser\\assets\\scripts\\gridmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9CF2FC44-1E01-9FB2-F1D3-D4A26E92C9D8}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\gridmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{e8b06f52-6d01-11d2-aa7d-00c04f990343}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "EnemyManager.cs",
+              "DocumentMoniker": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\EnemyManager.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\EnemyManager.cs",
+              "ToolTip": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\EnemyManager.cs",
+              "RelativeToolTip": "Assets\\Scripts\\EnemyManager.cs",
+              "ViewState": "AgIAAEwAAAAAAAAAAAAUwGUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-02T14:25:18.454Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "GameManager.cs",
+              "DocumentMoniker": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\GameManager.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\GameManager.cs",
+              "ToolTip": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\GameManager.cs",
+              "RelativeToolTip": "Assets\\Scripts\\GameManager.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB8AAAABAAAAAAAAAA==",
+              "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAEUSURBVFhH7dW9LoNRGAfwX\u002B0dmBjE6iMWi69gEroabCJpL6DC3Cg3IL2AMtjETGrU\u002BJgsEu1o062DCzgGeRsVL4mBhvOb3jznnOQ5/5PzHqIo\u002Bu8yyUez1QywfVkEN0/XYHxgAlSXj8Do4FhnzVuHd9UA\u002BalC13haPdH3vvDTOl3NH08HWB3JgdJiOQP7l\u002BUAt60bcLZe\u002B3An/ZVsgHbxuWs8rZ7onQS\u002B6nSyOhbgvtDIeHO2O/Wt91M/tTy8Ak7WTjN6IYGO/ko2JCl8R9r6tHri1xOIDcRb0Nlt7mQlwNzQHCgt7L7\u002BCet7AWqP5\u002BBq4/bDhNISTKsneieB5DXMX2yCRvsBzAzOgoOlCn/xNYyiKHoBupRyLYh9Y/kAAAAASUVORK5CYII=",
+              "WhenOpened": "2026-06-02T14:25:18.455Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PlayerController.cs",
+              "DocumentMoniker": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\PlayerController.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\PlayerController.cs",
+              "ToolTip": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\PlayerController.cs",
+              "RelativeToolTip": "Assets\\Scripts\\PlayerController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAEUSURBVFhH7dW9LoNRGAfwX\u002B0dmBjE6iMWi69gEroabCJpL6DC3Cg3IL2AMtjETGrU\u002BJgsEu1o062DCzgGeRsVL4mBhvOb3jznnOQ5/5PzHqIo\u002Bu8yyUez1QywfVkEN0/XYHxgAlSXj8Do4FhnzVuHd9UA\u002BalC13haPdH3vvDTOl3NH08HWB3JgdJiOQP7l\u002BUAt60bcLZe\u002B3An/ZVsgHbxuWs8rZ7onQS\u002B6nSyOhbgvtDIeHO2O/Wt91M/tTy8Ak7WTjN6IYGO/ko2JCl8R9r6tHri1xOIDcRb0Nlt7mQlwNzQHCgt7L7\u002BCet7AWqP5\u002BBq4/bDhNISTKsneieB5DXMX2yCRvsBzAzOgoOlCn/xNYyiKHoBupRyLYh9Y/kAAAAASUVORK5CYII=",
+              "WhenOpened": "2026-06-02T14:25:18.456Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "GridManager.cs",
+              "DocumentMoniker": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\GridManager.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\GridManager.cs",
+              "ToolTip": "D:\\Studio\\Project\\GridChaser\\GridChaser\\Assets\\Scripts\\GridManager.cs",
+              "RelativeToolTip": "Assets\\Scripts\\GridManager.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAUwD8AAABFAAAAAAAAAA==",
+              "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAEUSURBVFhH7dW9LoNRGAfwX\u002B0dmBjE6iMWi69gEroabCJpL6DC3Cg3IL2AMtjETGrU\u002BJgsEu1o062DCzgGeRsVL4mBhvOb3jznnOQ5/5PzHqIo\u002Bu8yyUez1QywfVkEN0/XYHxgAlSXj8Do4FhnzVuHd9UA\u002BalC13haPdH3vvDTOl3NH08HWB3JgdJiOQP7l\u002BUAt60bcLZe\u002B3An/ZVsgHbxuWs8rZ7onQS\u002B6nSyOhbgvtDIeHO2O/Wt91M/tTy8Ak7WTjN6IYGO/ko2JCl8R9r6tHri1xOIDcRb0Nlt7mQlwNzQHCgt7L7\u002BCet7AWqP5\u002BBq4/bDhNISTKsneieB5DXMX2yCRvsBzAzOgoOlCn/xNYyiKHoBupRyLYh9Y/kAAAAASUVORK5CYII=",
+              "WhenOpened": "2026-06-02T14:25:18.457Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
