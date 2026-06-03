@@ -19,18 +19,20 @@ public class PlayerController : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    public void Initialize(Vector2Int startPos)
     {
-        // 创建玩家的视觉方块
-        sr = gameObject.AddComponent<SpriteRenderer>();
-        sr.sprite = CreateSquareSprite();
-        sr.color = playerColor;
-        sr.sortingOrder = 2;
-        transform.localScale = Vector3.one * GridManager.Instance.CellSize * 0.85f;
+        if (sr == null)
+        {
+            sr = gameObject.AddComponent<SpriteRenderer>();
+            sr.sprite = CreateSquareSprite();
+            sr.color = playerColor;
+            sr.sortingOrder = 2;
+            transform.localScale = Vector3.one * GridManager.Instance.CellSize * 0.85f;
+        }
 
-        // 出生在格子中心
-        gridPos = new Vector2Int(0, 0);
-        transform.position = GridManager.Instance.GridToWorld(gridPos);
+        gridPos = startPos;
+        prevGridPos = startPos;
+        transform.position = GridManager.Instance.GridToWorld(startPos);
     }
 
     private void Update()
@@ -62,10 +64,25 @@ public class PlayerController : MonoBehaviour
         GridManager.Instance.SetVisited(prevPos);
 
         EnemyManager.Instance?.OnPlayerMoved(dir);
+
+        if (GridManager.Instance.GetState(gridPos) == GridManager.CellState.Goal)
+        {
+            bool allDone = !GridManager.Instance.CurrentLevel.requireAllVisited
+                           || GridManager.Instance.AllVisited();
+            if (allDone)
+                GameManager.Instance.TriggerWin();
+        }
     }
 
     // 工具方法
     public Vector2Int GridPos => gridPos;
+
+    public void SetStartPos(Vector2Int pos)
+    {
+        gridPos = pos;
+        prevGridPos = pos;
+        transform.position = GridManager.Instance.GridToWorld(gridPos);
+    }
 
     private Sprite CreateSquareSprite()
     {

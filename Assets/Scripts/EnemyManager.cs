@@ -27,20 +27,36 @@ public class EnemyManager : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
-    {
-        if (enemies == null || enemies.Length == 0) return;
+    public void Initialize(LevelData level)
+    {        
+        foreach (Transform child in transform)
+            Destroy(child.gameObject);
 
-        // 计算需要保留的最大历史步数
+        historyBuffer.Clear();
+        maxDelay = 0;
+        enemies = new EnemyData[0]; // 先清空旧数组
+
+        if (level.enemies == null || level.enemies.Length == 0) return;
+
+        enemies = new EnemyData[level.enemies.Length];
+        for (int i = 0; i < level.enemies.Length; i++)
+        {
+            enemies[i] = new EnemyData
+            {
+                startPos = level.enemies[i].startPos,
+                delay = level.enemies[i].delay,
+                gridPos = level.enemies[i].startPos
+            };
+        }
+
+        historyBuffer.Clear();
+
         maxDelay = 0;
         foreach (var e in enemies)
             if (e.delay > maxDelay) maxDelay = e.delay;
 
-        // 生成每个敌人的视觉方块
         foreach (var e in enemies)
         {
-            e.gridPos = e.startPos;
-
             GameObject go = new GameObject("Enemy");
             go.transform.SetParent(transform);
 

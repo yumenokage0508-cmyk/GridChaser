@@ -149,8 +149,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyManager
   enemies:
-  - startPos: {x: 4, y: 4}
-    delay: 2
+  - startPos: {x: 4, y: 1}
+    delay: 1
     gridPos: {x: 0, y: 0}
     go: {fileID: 0}
   enemyColor: {r: 1, g: 0.486, b: 0.486, a: 1}
@@ -248,6 +248,8 @@ MonoBehaviour:
   colorNormal: {r: 0.165, g: 0.165, b: 0.165, a: 1}
   colorVisited: {r: 0.361, g: 0.329, b: 0.569, a: 1}
   colorGoal: {r: 0.961, g: 0.784, b: 0.259, a: 1}
+  colorWall: {r: 0.1, g: 0.1, b: 0.1, a: 1}
+  currentLevel: {fileID: 0}
 --- !u!4 &661711816
 Transform:
   m_ObjectHideFlags: 0
@@ -258,6 +260,51 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1254290562
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1254290564}
+  - component: {fileID: 1254290563}
+  m_Layer: 0
+  m_Name: GameInitializer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1254290563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1254290562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e0934abf532ea54ba98cc686a57158e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameInitializer
+  levelData: {fileID: 11400000, guid: 7b6bb0808acf131448e64af03c96c6e9, type: 2}
+--- !u!4 &1254290564
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1254290562}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.49506, y: 0.15839, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -454,3 +501,4 @@ SceneRoots:
   - {fileID: 1716714991}
   - {fileID: 502418413}
   - {fileID: 403958651}
+  - {fileID: 1254290564}

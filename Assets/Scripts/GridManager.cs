@@ -12,9 +12,17 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Color colorNormal = new Color(0.165f, 0.165f, 0.165f);
     [SerializeField] private Color colorVisited = new Color(0.361f, 0.329f, 0.569f);
     [SerializeField] private Color colorGoal = new Color(0.961f, 0.784f, 0.259f);
+    [SerializeField] private Color colorWall = new Color(0.1f, 0.1f, 0.1f);
+
+    [Header("Level")]
+    [SerializeField] private LevelData currentLevel;
+
+    public LevelData CurrentLevel => currentLevel;
+
+    private Vector2Int playerStartPos;
 
     // 格子状态枚举
-    public enum CellState { Normal, Visited, Gone, Goal }
+    public enum CellState { Normal, Visited, Gone, Goal, Wall}
 
     // 内部数据
     private CellState[,] cellStates;
@@ -25,19 +33,50 @@ public class GridManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
     }
 
+
     // 初始化
-    private void Start()
+
+    public void LoadLevel(LevelData level)
     {
-        BuildGrid();
+        // 清除旧格子
+        foreach (Transform child in transform)
+            Destroy(child.gameObject);
+
+        currentLevel = level;
+        gridWidth = level.layout[0].Length;
+        gridHeight = level.layout.Length;
+
+        cellStates = new CellState[gridWidth, gridHeight];
+        cellRenderers = new SpriteRenderer[gridWidth, gridHeight];
+
+        for (int y = 0; y < gridHeight; y++)
+        {
+            string row = level.layout[gridHeight - 1 - y]; // Element 0 是最下面一行
+            for (int x = 0; x < gridWidth; x++)
+            {
+                char c = row[x];
+                CreateCell(x, y);
+
+                if (c == 'S') playerStartPos = new Vector2Int(x, y);
+                else if (c == 'G') SetGoal(new Vector2Int(x, y));
+                else if (c == 'X')
+                {
+                    cellStates[x, y] = CellState.Wall;
+                    cellRenderers[x, y].color = colorWall;
+                }
+            }
+        }
+
+
+        CenterCamera();
+
     }
+
+    public Vector2Int GetPlayerStartPos() => playerStartPos;
 
     private void BuildGrid()
     {
@@ -77,7 +116,8 @@ public class GridManager : MonoBehaviour
     public bool CanEnter(Vector2Int gridPos)
     {
         if (!IsInBounds(gridPos)) return false;
-        return cellStates[gridPos.x, gridPos.y] != CellState.Gone;
+        CellState s = cellStates[gridPos.x, gridPos.y];
+        return s == CellState.Normal || s == CellState.Goal;
     }
 
     public void SetVisited(Vector2Int gridPos)
@@ -123,6 +163,17 @@ public class GridManager : MonoBehaviour
         int x = Mathf.RoundToInt((worldPos.x + offsetX) / cellSize);
         int y = Mathf.RoundToInt((worldPos.y + offsetY) / cellSize);
         return new Vector2Int(x, y);
+    }
+
+    public bool AllVisited()
+    {
+        for (int x = 0; x < gridWidth; x++)
+            for (int y = 0; y < gridHeight; y++)
+            {
+                CellState s = cellStates[x, y];
+                if (s == CellState.Normal) return false;
+            }
+        return true;
     }
 
     // 内部工具方法
