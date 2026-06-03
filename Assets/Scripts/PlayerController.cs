@@ -72,6 +72,9 @@ public class PlayerController : MonoBehaviour
             if (allDone)
                 GameManager.Instance.TriggerWin();
         }
+        // 新增：卡死检测——无路可走且未通关则判定失败
+        if (!GridManager.Instance.HasAnyExit(gridPos))
+            GameManager.Instance.TriggerDeath();
     }
 
     // 工具方法

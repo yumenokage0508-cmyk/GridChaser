@@ -5,9 +5,9 @@ public class LevelData : ScriptableObject
 {
     public string levelName;
 
-    [TextArea]
-    public string[] layout;
-    // 每行一个字符串，从下到上排列
+    [TextArea(5, 20)]
+    public string layout;
+    // 从上到下排列，每行一个字符
     // S = 玩家起点
     // G = 终点
     // X = 墙

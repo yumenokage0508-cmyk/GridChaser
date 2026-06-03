@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: Level_01
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
   levelName: "\u5173\u53611"
-  layout:
-  - S....
-  - .....
-  - ....G
+  layout: 'S....
+
+    .....
+
+    ....G'
   enemies: []
-  requireAllVisited: 0
+  requireAllVisited: 1

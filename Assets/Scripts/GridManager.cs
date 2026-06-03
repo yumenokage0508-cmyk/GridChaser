@@ -47,15 +47,20 @@ public class GridManager : MonoBehaviour
             Destroy(child.gameObject);
 
         currentLevel = level;
-        gridWidth = level.layout[0].Length;
-        gridHeight = level.layout.Length;
+
+        string[] rows = level.layout.Split('\n');
+        for (int i = 0; i < rows.Length; i++)
+            rows[i] = rows[i].Trim();
+
+        gridWidth = rows[0].Length;
+        gridHeight = rows.Length;
 
         cellStates = new CellState[gridWidth, gridHeight];
         cellRenderers = new SpriteRenderer[gridWidth, gridHeight];
 
         for (int y = 0; y < gridHeight; y++)
         {
-            string row = level.layout[gridHeight - 1 - y]; // Element 0 是最下面一行
+            string row = rows[gridHeight - 1 - y];
             for (int x = 0; x < gridWidth; x++)
             {
                 char c = row[x];
@@ -70,7 +75,6 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-
 
         CenterCamera();
 
@@ -174,6 +178,14 @@ public class GridManager : MonoBehaviour
                 if (s == CellState.Normal) return false;
             }
         return true;
+    }
+
+    public bool HasAnyExit(Vector2Int pos)
+    {
+        return CanEnter(pos + Vector2Int.up)
+            || CanEnter(pos + Vector2Int.down)
+            || CanEnter(pos + Vector2Int.left)
+            || CanEnter(pos + Vector2Int.right);
     }
 
     // 内部工具方法
