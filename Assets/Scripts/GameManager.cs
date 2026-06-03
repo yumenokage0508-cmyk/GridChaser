@@ -6,7 +6,12 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    [Header("Level Sequence")]
+    [SerializeField] private LevelData[] levels;
+    private int currentLevelIndex = 0;
+
     private bool isGameOver = false;
+    public bool IsGameOver => isGameOver;
 
     private void Awake()
     {
@@ -15,9 +20,24 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    public LevelData GetCurrentLevel()
+    {
+        if (levels == null || levels.Length == 0)
+        {
+            Debug.LogError("GameManager: levels 数组为空，请点击 Inspector 里的「自动填充关卡列表」按钮！");
+            return null;
+        }
+        return levels[currentLevelIndex];
+    }
+
+    public void ResetGameState()
+    {
+        isGameOver = false;
+    }
+
     public void TriggerDeath()
     {
-        if (isGameOver) return;   // 本关已结束，忽略后续触发
+        if (isGameOver) return;
         isGameOver = true;
         Debug.Log("DEAD");
         StartCoroutine(ReloadAfterDelay(0.5f));
@@ -27,13 +47,17 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
-        Debug.Log("WIN");
-    }
 
-    // 每次进入/重载关卡时由 GameInitializer 调用，重置状态
-    public void ResetGameState()
-    {
-        isGameOver = false;
+        if (currentLevelIndex < levels.Length - 1)
+        {
+            currentLevelIndex++;
+            Debug.Log($"WIN → 加载第 {currentLevelIndex + 1} 关");
+            StartCoroutine(ReloadAfterDelay(0.5f));
+        }
+        else
+        {
+            Debug.Log("通关全部关卡！");
+        }
     }
 
     private IEnumerator ReloadAfterDelay(float delay)

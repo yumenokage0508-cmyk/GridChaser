@@ -198,6 +198,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0af9d6fbedea034487f70d668a86f47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  levels:
+  - {fileID: 11400000, guid: 7b6bb0808acf131448e64af03c96c6e9, type: 2}
 --- !u!4 &502418413
 Transform:
   m_ObjectHideFlags: 0
@@ -294,7 +296,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e0934abf532ea54ba98cc686a57158e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameInitializer
-  levelData: {fileID: 11400000, guid: 7b6bb0808acf131448e64af03c96c6e9, type: 2}
 --- !u!4 &1254290564
 Transform:
   m_ObjectHideFlags: 0
