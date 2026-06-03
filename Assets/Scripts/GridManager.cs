@@ -20,6 +20,8 @@ public class GridManager : MonoBehaviour
     public LevelData CurrentLevel => currentLevel;
 
     private Vector2Int playerStartPos;
+    private int totalFillableCells = 0;   // 关卡内可填格子总数（分母）
+    private int visitedCount = 0;         // 已离开的格子数（不含当前站立格）
 
     // 格子状态枚举
     public enum CellState { Normal, Visited, Gone, Goal, Wall}
@@ -75,6 +77,8 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
+        
+        CountFillableCells();
 
         CenterCamera();
 
@@ -131,6 +135,8 @@ public class GridManager : MonoBehaviour
 
         cellStates[gridPos.x, gridPos.y] = CellState.Visited;
         cellRenderers[gridPos.x, gridPos.y].color = colorVisited;
+        visitedCount++;    // 新增
+
     }
 
     public CellState GetState(Vector2Int gridPos)
@@ -188,12 +194,36 @@ public class GridManager : MonoBehaviour
             || CanEnter(pos + Vector2Int.right);
     }
 
+
+    // 统计可填格子总数，LoadLevel 时调用一次
+    private void CountFillableCells()
+    {
+        totalFillableCells = 0;
+        visitedCount = 0;
+        for (int x = 0; x < gridWidth; x++)
+            for (int y = 0; y < gridHeight; y++)
+            {
+                CellState s = cellStates[x, y];
+                // Normal 和 Goal 都算可填格（Start 格是 Normal，终点格是 Goal）
+                if (s == CellState.Normal || s == CellState.Goal)
+                    totalFillableCells++;
+            }
+    }
+
+    // 阶段 6.3 填格计数 UI 读取
+    public int TotalFillableCells => totalFillableCells;
+
+    // 已访问数 + 玩家当前站立格（当前格永远是 Normal/Goal，不是 Visited）
+    public int FilledCellCount => visitedCount + 1;
+
+
     // 内部工具方法
     private bool IsInBounds(Vector2Int gridPos)
     {
         return gridPos.x >= 0 && gridPos.x < gridWidth &&
                gridPos.y >= 0 && gridPos.y < gridHeight;
     }
+
 
     private void CenterCamera()
     {

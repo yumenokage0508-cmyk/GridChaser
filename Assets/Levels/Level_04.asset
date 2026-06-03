@@ -10,15 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b545ebc6f246174f90b4830bc6f899f, type: 3}
-  m_Name: Level_01
+  m_Name: Level_04
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
-  levelName: "\u5173\u53611"
+  levelName: "\u5173\u53614"
   description: 
-  layout: '.....
+  layout: '......
 
-    S...G
+    .XXXX.
 
-    .....'
+    .XXXX.
+
+    .XXXX.
+
+    .XXXX.
+
+    SG....'
   solutionMoves: 
   enemies: []
-  requireAllVisited: 0
+  requireAllVisited: 1
