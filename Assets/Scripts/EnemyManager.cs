@@ -95,7 +95,7 @@ public class EnemyManager : MonoBehaviour
             }
 
             // 能走就走
-            if (GridManager.Instance.CanEnter(nextPos))
+            if (GridManager.Instance.CanEnemyEnter(nextPos))
             {
                 e.gridPos = nextPos;
                 e.go.transform.position = GridManager.Instance.GridToWorld(e.gridPos);
@@ -105,6 +105,12 @@ public class EnemyManager : MonoBehaviour
             CheckDeath(e, prevPos);
         }
     }
+
+    public System.Collections.Generic.IEnumerable<Vector2Int> GetEnemyPositions()
+    {
+        foreach (var e in enemies) yield return e.gridPos;
+    }
+
 
     private void CheckDeath(EnemyData e, Vector2Int enemyPrevPos)
     {

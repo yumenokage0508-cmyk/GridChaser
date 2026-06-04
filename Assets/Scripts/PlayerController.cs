@@ -54,7 +54,8 @@ public class PlayerController : MonoBehaviour
     {
         Vector2Int nextPos = gridPos + dir;
 
-        if (!GridManager.Instance.CanEnter(nextPos)) return;
+        // Bug2：终点必须最后进入；同时统一了"不能走 Visited"的判断
+        if (!GridManager.Instance.CanPlayerEnter(nextPos, gridPos)) return;
 
         Vector2Int prevPos = gridPos;
         prevGridPos = prevPos;
@@ -63,19 +64,30 @@ public class PlayerController : MonoBehaviour
 
         GridManager.Instance.SetVisited(prevPos);
 
-        EnemyManager.Instance?.OnPlayerMoved(dir);
+        // Bug3：死亡检查①——玩家主动踩到敌人当前所在格
+        if (EnemyManager.Instance != null)
+        {
+            foreach (var ePos in EnemyManager.Instance.GetEnemyPositions())
+                if (gridPos == ePos) { GameManager.Instance.TriggerDeath(); return; }
+        }
 
+        EnemyManager.Instance?.OnPlayerMoved(dir);
+        if (GameManager.Instance.IsGameOver) return;   // 敌人移动可能已触发死亡
+
+        // 通关判定
         if (GridManager.Instance.GetState(gridPos) == GridManager.CellState.Goal)
         {
             bool allDone = !GridManager.Instance.CurrentLevel.requireAllVisited
                            || GridManager.Instance.AllVisited();
-            if (allDone)
-                GameManager.Instance.TriggerWin();
+            if (allDone) GameManager.Instance.TriggerWin();
+            return;
         }
-        // 新增：卡死检测——无路可走且未通关则判定失败
+
+        // 卡死检测（HasAnyExit 现在已感知"终点未到最后"）
         if (!GridManager.Instance.HasAnyExit(gridPos))
             GameManager.Instance.TriggerDeath();
     }
+
 
     // 工具方法
     public Vector2Int GridPos => gridPos;

@@ -128,6 +128,36 @@ public class GridManager : MonoBehaviour
         return s == CellState.Normal || s == CellState.Goal;
     }
 
+    // 敌人专用：只挡墙和越界，允许进入玩家走过的 Visited 格
+    public bool CanEnemyEnter(Vector2Int gridPos)
+    {
+        if (!IsInBounds(gridPos)) return false;
+        return cellStates[gridPos.x, gridPos.y] != CellState.Wall;
+    }
+
+    // 玩家可进入判断：不能走 Visited/Gone/Wall；终点必须等到可通关才允许进入
+    public bool CanPlayerEnter(Vector2Int pos, Vector2Int currentPos)
+    {
+        if (!IsInBounds(pos)) return false;
+        CellState s = cellStates[pos.x, pos.y];
+        if (s == CellState.Goal)
+            return !currentLevel.requireAllVisited || AllVisitedExceptCurrent(currentPos);
+        return s == CellState.Normal;
+    }
+
+    // 除玩家当前格和终点外，其余可填格是否都已踩过
+    public bool AllVisitedExceptCurrent(Vector2Int currentPos)
+    {
+        for (int x = 0; x < gridWidth; x++)
+            for (int y = 0; y < gridHeight; y++)
+            {
+                if (x == currentPos.x && y == currentPos.y) continue;
+                if (cellStates[x, y] == CellState.Normal) return false;
+            }
+        return true;
+    }
+
+
     public void SetVisited(Vector2Int gridPos)
     {
         if (!IsInBounds(gridPos)) return;
@@ -186,12 +216,12 @@ public class GridManager : MonoBehaviour
         return true;
     }
 
-    public bool HasAnyExit(Vector2Int pos)
+    public bool HasAnyExit(Vector2Int currentPos)
     {
-        return CanEnter(pos + Vector2Int.up)
-            || CanEnter(pos + Vector2Int.down)
-            || CanEnter(pos + Vector2Int.left)
-            || CanEnter(pos + Vector2Int.right);
+        return CanPlayerEnter(currentPos + Vector2Int.up, currentPos)
+            || CanPlayerEnter(currentPos + Vector2Int.down, currentPos)
+            || CanPlayerEnter(currentPos + Vector2Int.left, currentPos)
+            || CanPlayerEnter(currentPos + Vector2Int.right, currentPos);
     }
 
 
