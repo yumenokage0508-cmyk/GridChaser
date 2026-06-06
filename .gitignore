@@ -12,5 +12,9 @@
 *.userprefs
 *.unityproj
 .DS_Store
-Thumbs.db".vs/" 
-".vs/" 
+Thumbs.db
+.vs/
+
+# 关卡生成器的产物（可由脚本随时重跑生成，不入库）
+Tools/LevelGenerator/generated_*.txt
+Tools/LevelGenerator/generated_*.json
