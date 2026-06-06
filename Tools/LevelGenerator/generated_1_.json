@@ -1,0 +1,102 @@
+{
+  "job": {
+    "name": "组1_中等",
+    "width": 11,
+    "height": 11,
+    "greedy": 0.8,
+    "n_pillars": 7,
+    "min_cells": 28,
+    "max_cells": 46,
+    "min_pillars": 1,
+    "min_chokepoints": 6,
+    "min_difficulty": 0.45,
+    "max_difficulty": 0.78,
+    "rollouts": 150,
+    "candidates": 2500,
+    "want": 8,
+    "seed": null
+  },
+  "generatedAt": "2026-06-07T01:29:58",
+  "levels": [
+    {
+      "name": "1__L1",
+      "layout": "XXX........\nX..........\nX.GX.X.....\n..XX...X...\n.....SXXXXX",
+      "solutionMoves": "URURURDDRRULURULLLLDLULLDRDDDLLLLURUURD",
+      "requireAllVisited": true,
+      "difficulty": 0.7733,
+      "cells": 40,
+      "interiorPillars": 1,
+      "chokepoints": 13
+    },
+    {
+      "name": "1__L2",
+      "layout": ".SG..X\n.....X\n.....X\n...X..\n......\n..X..X\n..XXXX\n..XXXX",
+      "solutionMoves": "LDDDDDDDRUUUUUURDDDRDRURULULURULL",
+      "requireAllVisited": true,
+      "difficulty": 0.7733,
+      "cells": 34,
+      "interiorPillars": 1,
+      "chokepoints": 8
+    },
+    {
+      "name": "1__L3",
+      "layout": "....XXXXX\n....XXXXX\n....XXXXX\n.SX...XXX\nXXX.....X\nXXXG..X..\nXXXXX..X.\nXXXXXX...",
+      "solutionMoves": "LUUURRRDLLDRRDRRDRRDRDDLLULULULD",
+      "requireAllVisited": true,
+      "difficulty": 0.7733,
+      "cells": 33,
+      "interiorPillars": 2,
+      "chokepoints": 16
+    },
+    {
+      "name": "1__L4",
+      "layout": ".......\n.......\n....X..\n.......\n......S\nX.XGX..\nX...XXX",
+      "solutionMoves": "DLULURRULURULLDLULDLULDDRRRDDLULLDRDDRRU",
+      "requireAllVisited": true,
+      "difficulty": 0.7467,
+      "cells": 41,
+      "interiorPillars": 2,
+      "chokepoints": 10
+    },
+    {
+      "name": "1__L5",
+      "layout": "..X..XXX\n.....XXX\n..GX....\n......X.\n.....X..\n.......X\n..X...SX",
+      "solutionMoves": "LLLULLDLUUUUUURDDDDRURDRDRRURUULLDLUUULDLD",
+      "requireAllVisited": true,
+      "difficulty": 0.74,
+      "cells": 43,
+      "interiorPillars": 3,
+      "chokepoints": 14
+    },
+    {
+      "name": "1__L6",
+      "layout": "XX.....\n.......\n..X...X\n....XXX\n....XXX\nG.S.XXX\n....XXX",
+      "solutionMoves": "DRUULURURRURULLDLULDLLDRDLDRDDLU",
+      "requireAllVisited": true,
+      "difficulty": 0.7267,
+      "cells": 33,
+      "interiorPillars": 1,
+      "chokepoints": 7
+    },
+    {
+      "name": "1__L7",
+      "layout": "XX...XX....\nX..X.......\nX.....X..XX\nS.....G..XX\n.........XX",
+      "solutionMoves": "DRURDRUULLURURRDDRURRURRRDLLDLDRDLLLLURR",
+      "requireAllVisited": true,
+      "difficulty": 0.7133,
+      "cells": 41,
+      "interiorPillars": 2,
+      "chokepoints": 11
+    },
+    {
+      "name": "1__L8",
+      "layout": "X...XXXXXXX\n..X...G....\n.S.........\n...........",
+      "solutionMoves": "RDLLUURURRDRDLDRRRRRRRUULDLULDLLUR",
+      "requireAllVisited": true,
+      "difficulty": 0.7133,
+      "cells": 35,
+      "interiorPillars": 1,
+      "chokepoints": 7
+    }
+  ]
+}

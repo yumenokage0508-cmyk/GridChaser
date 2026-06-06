@@ -1,0 +1,93 @@
+==== 组2_偏难 关卡1  格数=49  难度=94%  内部柱子=2  咽喉格=16 ====
+...XXXXXX
+...XXXXXX
+....X..XX
+..X......
+S....X...
+...G.X...
+..X..X..X
+XXX.X...X
+XXX...XXX
+solutionMoves=DDRUUULURULURRDDRDRRURDDRURDDLLDRDLLDLLUURUULLDR
+
+==== 组2_偏难 关卡2  格数=46  难度=94%  内部柱子=2  咽喉格=16 ====
+XXX..XX
+XXX..XX
+X.....X
+......X
+...X.XX
+.....XX
+..X....
+SXX.X..
+.XX...G
+.......
+solutionMoves=DDRRRUUUULULDDLUUURURDRUUURDDRDLDDDRRDLDLDRRU
+
+==== 组2_偏难 关卡3  格数=43  难度=93%  内部柱子=2  咽喉格=10 ====
+XXX...XX
+....X.XX
+...XS.XX
+......XX
+........
+........
+G.......
+solutionMoves=DRUUULLDLLLDRRDRDRRDRURDDLLLULDLLURULULDDD
+
+==== 组2_偏难 关卡4  格数=43  难度=93%  内部柱子=3  咽喉格=16 ====
+...XXX
+S..XXX
+..XXXX
+....XX
+.GX.XX
+.X....
+......
+X.....
+XX..X.
+XXX...
+XXX...
+XXX...
+solutionMoves=URRDLDLDRRRDDLDRDRUURDDDDLDRDLLUUULULULUUR
+
+==== 组2_偏难 关卡5  格数=57  难度=92%  内部柱子=3  咽喉格=12 ====
+..XXXXXXX
+...X....X
+....G...X
+..X......
+..SX...X.
+.........
+........X
+........X
+solutionMoves=DRRUULULULULDDRDLDRDLDDRURDRURDRRRULLUURDRRUULUULDDLUULD
+
+==== 组2_偏难 关卡6  格数=54  难度=90%  内部柱子=2  咽喉格=16 ====
+.......XXXXX
+.......XXXXX
+..S......X..
+...X........
+XX...X..XG..
+XX...XXXXX..
+XX.X.XXXXXXX
+XX...XXXXXXX
+solutionMoves=UULLDRDLDRRDRDLDDRRUUUURULLUURDRURDDDDRUURDRRURDDDLUL
+
+==== 组2_偏难 关卡7  格数=39  难度=90%  内部柱子=2  咽喉格=15 ====
+.......XXXXX
+.......XXXXX
+X.........XX
+XXX..S..X...
+XXXXXXGX....
+XXXXXX...XXX
+solutionMoves=ULDLULLULURRDRURDRURDDDRURRDRRDLLLDLLU
+
+==== 组2_偏难 关卡8  格数=48  难度=89%  内部柱子=2  咽喉格=10 ====
+.....X
+......
+..X...
+......
+......
+..X...
+G.....
+...XX.
+..XX..
+XXXXSX
+solutionMoves=URUUUULDDLUULURURDRUULULDLULLDRDLDRDLDRDRDLDLUU
