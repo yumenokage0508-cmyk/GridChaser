@@ -14,15 +14,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
   levelName: "\u5173\u53615"
   description: 
-  layout: '.......G
+  layout: 'XXXXX...
 
-    .XXXXXXX
+    XXXXX...
 
-    ........
+    XXXXXX..
+
+    XXX.....
+
+    XXX..XG.
+
+    XXXX....
 
     XXXXXXX.
 
-    S.......'
+    XXXXXXX.
+
+    XXXXXXX.
+
+    S.......
+
+    ........'
   solutionMoves: 
   enemies: []
   requireAllVisited: 1

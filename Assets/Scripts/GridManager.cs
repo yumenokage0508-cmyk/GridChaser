@@ -24,7 +24,14 @@ public class GridManager : MonoBehaviour
     private int visitedCount = 0;         // 已离开的格子数（不含当前站立格）
 
     // 格子状态枚举
-    public enum CellState { Normal, Visited, Gone, Goal, Wall}
+    public enum CellState { Normal, Visited, Gone, Goal, Wall }
+
+    // 撤回用的格子状态快照
+    public class GridSnapshot
+    {
+        public CellState[,] states;
+        public int visitedCount;
+    }
 
     // 内部数据
     private CellState[,] cellStates;
@@ -77,7 +84,7 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-        
+
         CountFillableCells();
 
         CenterCamera();
@@ -245,6 +252,45 @@ public class GridManager : MonoBehaviour
 
     // 已访问数 + 玩家当前站立格（当前格永远是 Normal/Goal，不是 Visited）
     public int FilledCellCount => visitedCount + 1;
+
+
+    // ===== 撤回支持 =====
+
+    // 拍快照：深拷贝格子状态数组 + 已访问计数
+    public GridSnapshot CaptureState()
+    {
+        return new GridSnapshot
+        {
+            states = (CellState[,])cellStates.Clone(),
+            visitedCount = visitedCount
+        };
+    }
+
+    // 恢复快照：写回每个格子的状态并重新着色，最后还原计数
+    public void RestoreState(GridSnapshot snap)
+    {
+        for (int x = 0; x < gridWidth; x++)
+            for (int y = 0; y < gridHeight; y++)
+            {
+                cellStates[x, y] = snap.states[x, y];
+                RefreshCellColor(x, y);
+            }
+        visitedCount = snap.visitedCount;
+    }
+
+    // 按当前状态刷新单个格子的颜色（撤回时复原视觉）
+    private void RefreshCellColor(int x, int y)
+    {
+        Color c;
+        switch (cellStates[x, y])
+        {
+            case CellState.Visited: c = colorVisited; break;
+            case CellState.Goal: c = colorGoal; break;
+            case CellState.Wall: c = colorWall; break;
+            default: c = colorNormal; break;
+        }
+        cellRenderers[x, y].color = c;
+    }
 
 
     // 内部工具方法

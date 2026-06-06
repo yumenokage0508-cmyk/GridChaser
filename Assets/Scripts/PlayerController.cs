@@ -13,6 +13,13 @@ public class PlayerController : MonoBehaviour
 
     public static PlayerController Instance { get; private set; }
 
+    // 撤回用的玩家状态快照
+    public class PlayerSnapshot
+    {
+        public Vector2Int gridPos;
+        public Vector2Int prevGridPos;
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -40,6 +47,23 @@ public class PlayerController : MonoBehaviour
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
 
+        // 游戏结束（通关）后锁输入，避免重载前误操作
+        if (GameManager.Instance.IsGameOver) return;
+
+        // 重新开始：按 R 重载当前关
+        if (keyboard.rKey.wasPressedThisFrame)
+        {
+            GameManager.Instance.RestartLevel();
+            return;
+        }
+
+        // 撤回：按 Z 撤销上一步移动
+        if (keyboard.zKey.wasPressedThisFrame)
+        {
+            UndoManager.Instance.Undo();
+            return;
+        }
+
         Vector2Int dir = Vector2Int.zero;
 
         if (keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame) dir = Vector2Int.up;
@@ -54,8 +78,11 @@ public class PlayerController : MonoBehaviour
     {
         Vector2Int nextPos = gridPos + dir;
 
-        // Bug2：终点必须最后进入；同时统一了"不能走 Visited"的判断
+        // 终点必须最后进入；同时统一了"不能走 Visited"的判断
         if (!GridManager.Instance.CanPlayerEnter(nextPos, gridPos)) return;
+
+        // 合法移动已确认，在改动任何状态之前先拍快照（供撤回）
+        UndoManager.Instance.RecordTurn();
 
         Vector2Int prevPos = gridPos;
         prevGridPos = prevPos;
@@ -64,7 +91,7 @@ public class PlayerController : MonoBehaviour
 
         GridManager.Instance.SetVisited(prevPos);
 
-        // Bug3：死亡检查①——玩家主动踩到敌人当前所在格
+        // 死亡检查①——敌人停用时 Instance 为 null，整段自动跳过（当前游戏无死亡）
         if (EnemyManager.Instance != null)
         {
             foreach (var ePos in EnemyManager.Instance.GetEnemyPositions())
@@ -83,9 +110,21 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // 卡死检测（HasAnyExit 现在已感知"终点未到最后"）
-        if (!GridManager.Instance.HasAnyExit(gridPos))
-            GameManager.Instance.TriggerDeath();
+        // 卡死判负已移除：走进死路不再判负，玩家用 Z 撤回或 R 重开
+    }
+
+    // 拍快照：保存玩家当前与上一步位置
+    public PlayerSnapshot CaptureState()
+    {
+        return new PlayerSnapshot { gridPos = gridPos, prevGridPos = prevGridPos };
+    }
+
+    // 恢复快照：写回位置并把方块摆回去
+    public void RestoreState(PlayerSnapshot snap)
+    {
+        gridPos = snap.gridPos;
+        prevGridPos = snap.prevGridPos;
+        transform.position = GridManager.Instance.GridToWorld(gridPos);
     }
 
 
