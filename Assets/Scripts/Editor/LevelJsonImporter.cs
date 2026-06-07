@@ -4,11 +4,11 @@ using System.IO;
 
 // 关卡 JSON 导入器（编辑器工具）。
 // 菜单 Tools/GridChaser/导入候选关卡 → 弹窗选 level_generator 产出的 JSON →
-// 把其中每一关变成 LevelData 资产，写入 Assets/Levels/_Candidates/。
-// 同名资产覆盖刷新（幂等导入）；策展元数据一并写入，curationScore 归零等待打分。
+// 把其中每一关变成 LevelData 资产，写入统一关卡池 Assets/Levels/。
+// 同名关卡：未收藏的覆盖刷新（重导即更新）；已收藏的跳过保护（不覆盖你选定的成果）。
 public static class LevelJsonImporter
 {
-    private const string CandidateDir = "Assets/Levels/_Candidates";
+    private const string PoolDir = "Assets/Levels";
 
     [MenuItem("Tools/GridChaser/导入候选关卡 (JSON)")]
     public static void ImportFromJson()
@@ -35,42 +35,50 @@ public static class LevelJsonImporter
             return;
         }
 
-        // 4. 确保候选目录存在
-        EnsureFolder(CandidateDir);
+        // 4. 确保关卡池目录存在
+        EnsureFolder(PoolDir);
 
-        // 5. 逐关创建或覆盖
-        int created = 0, updated = 0;
+        // 5. 逐关创建 / 覆盖 / 保护
+        int created = 0, updated = 0, skipped = 0;
         foreach (JsonLevel jl in payload.levels)
         {
-            string assetPath = $"{CandidateDir}/{Sanitize(jl.name)}.asset";
+            string assetPath = $"{PoolDir}/{Sanitize(jl.name)}.asset";
             LevelData data = AssetDatabase.LoadAssetAtPath<LevelData>(assetPath);
             bool isNew = data == null;
+
+            // 保护：同名但已收藏（选入正式）的关卡，跳过不覆盖
+            if (!isNew && data.isFavorite) { skipped++; continue; }
+
             if (isNew) data = ScriptableObject.CreateInstance<LevelData>();
 
             // 运行时字段
-            data.levelName        = jl.name;
-            data.layout           = jl.layout;
-            data.solutionMoves    = jl.solutionMoves;
+            data.levelName = jl.name;
+            data.layout = jl.layout;
+            data.solutionMoves = jl.solutionMoves;
             data.requireAllVisited = jl.requireAllVisited;
-            data.enemies          = new LevelData.EnemyConfig[0];   // 一笔画 only，无敌人
+            data.enemies = new LevelData.EnemyConfig[0];   // 一笔画 only，无敌人
 
-            // 策展元数据（curationScore 归零，等试玩后打分）
-            data.curationScore    = 0;
-            data.difficulty       = jl.difficulty;
-            data.cells            = jl.cells;
-            data.interiorPillars  = jl.interiorPillars;
-            data.chokepoints      = jl.chokepoints;
+            // 策展元数据（重导即重置评分/收藏；来源标记为生成）
+            data.source = "generated";
+            data.curationScore = 0;
+            data.isFavorite = false;
+            data.finalOrder = 0;
+            data.difficulty = jl.difficulty;
+            data.cells = jl.cells;
+            data.interiorPillars = jl.interiorPillars;
+            data.chokepoints = jl.chokepoints;
 
             if (isNew) { AssetDatabase.CreateAsset(data, assetPath); created++; }
-            else       { EditorUtility.SetDirty(data); updated++; }
+            else { EditorUtility.SetDirty(data); updated++; }
         }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
         EditorUtility.DisplayDialog("导入完成",
-            $"来源：{Path.GetFileName(path)}\n新建 {created} 关，覆盖 {updated} 关。\n位置：{CandidateDir}", "好的");
-        Debug.Log($"[LevelImporter] 新建 {created}，覆盖 {updated}，来源 {path}");
+            $"来源：{Path.GetFileName(path)}\n" +
+            $"新建 {created} 关，覆盖 {updated} 关，跳过（已收藏保护）{skipped} 关。\n位置：{PoolDir}", "好的");
+        Debug.Log($"[LevelImporter] 新建 {created}，覆盖 {updated}，跳过 {skipped}，来源 {path}");
     }
 
     // 递归确保多级文件夹存在（AssetDatabase 一次只能建一层）
@@ -99,11 +107,11 @@ public static class LevelJsonImporter
         public string name;
         public string layout;
         public string solutionMoves;
-        public bool   requireAllVisited;
-        public float  difficulty;
-        public int    cells;
-        public int    interiorPillars;
-        public int    chokepoints;
+        public bool requireAllVisited;
+        public float difficulty;
+        public int cells;
+        public int interiorPillars;
+        public int chokepoints;
     }
 
     [System.Serializable]

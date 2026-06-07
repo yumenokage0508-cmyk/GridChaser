@@ -19,10 +19,20 @@ public class LevelData : ScriptableObject
 
     // ===== Dev / 策展元数据（仅编辑器/策展期使用，运行时游戏逻辑不读取）=====
     [Header("Dev / 策展（运行时不读取）")]
-    [Tooltip("试玩后的人工评分，策展挑选正式关卡时排序用。")]
+
+    [Tooltip("试玩后的人工评分（1-5 星），策展挑选正式关卡时排序用。")]
     public int curationScore;
 
-    [Tooltip("生成器估计的难度：0 最易 ~ 1 最难（贪心试玩通关率的补）。")]
+    [Tooltip("是否选入正式（收藏）。正式视图只显示此项为 true 的关卡。")]
+    public bool isFavorite;
+
+    [Tooltip("正式视图里的最终顺序号；未收藏的关卡忽略此值。")]
+    public int finalOrder;
+
+    [Tooltip("来源：generated = 生成器导入；manual = 手工编辑器制作。")]
+    public string source;
+
+    [Tooltip("生成器估计的难度：0 最易 ~ 1 最难。手工关卡可留空。")]
     public float difficulty;
 
     [Tooltip("可玩格子总数（需踩满的格数）。")]

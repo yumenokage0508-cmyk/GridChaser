@@ -6,9 +6,15 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    // 试玩目标在 SessionState 里的键（编辑器试玩工具 LevelPlaytest 与此处共用同一字符串）
+    public const string PlaytestSessionKey = "GridChaser.PlaytestLevelPath";
+
     [Header("Level Sequence")]
     [SerializeField] private LevelData[] levels;
     private int currentLevelIndex = 0;
+
+    private LevelData playtestOverride;             // 非 null = 处于试玩模式
+    public bool IsPlaytestMode => playtestOverride != null;
 
     private bool isGameOver = false;
     public bool IsGameOver => isGameOver;
@@ -18,13 +24,22 @@ public class GameManager : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+#if UNITY_EDITOR
+        // 编辑器试玩：若设置了试玩目标，则加载它，绕过正常关卡序列
+        string p = UnityEditor.SessionState.GetString(PlaytestSessionKey, "");
+        if (!string.IsNullOrEmpty(p))
+            playtestOverride = UnityEditor.AssetDatabase.LoadAssetAtPath<LevelData>(p);
+#endif
     }
 
     public LevelData GetCurrentLevel()
     {
+        if (playtestOverride != null) return playtestOverride;   // 试玩模式优先
+
         if (levels == null || levels.Length == 0)
         {
-            Debug.LogError("GameManager: levels 数组为空，请点击 Inspector 里的「自动填充关卡列表」按钮！");
+            Debug.LogError("GameManager: levels 数组为空。正常游玩需先在策展窗口『应用到游戏』填入关卡。");
             return null;
         }
         return levels[currentLevelIndex];
@@ -50,6 +65,14 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
 
+        // 试玩模式：通关不进下一关，重玩本关方便反复试手感
+        if (IsPlaytestMode)
+        {
+            Debug.Log("试玩通关 → 重玩本关");
+            StartCoroutine(ReloadAfterDelay(0.5f));
+            return;
+        }
+
         if (currentLevelIndex < levels.Length - 1)
         {
             currentLevelIndex++;
@@ -62,12 +85,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 重新开始当前关：立即重载场景。
-    // GameManager 持久化（DontDestroyOnLoad），currentLevelIndex 不变，故重载即重玩本关；
-    // 重载时 GameInitializer 会重置 isGameOver、重建格子、清空撤回历史。
+    // 重新开始当前关：立即重载场景（试玩模式下也会重玩当前试玩关）
     public void RestartLevel()
     {
-        StopAllCoroutines();   // 清掉可能在排队的重载/胜利协程，避免重开后被打断
+        StopAllCoroutines();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 

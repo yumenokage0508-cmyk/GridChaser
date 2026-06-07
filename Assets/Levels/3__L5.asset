@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b545ebc6f246174f90b4830bc6f899f, type: 3}
+  m_Name: 3__L5
+  m_EditorClassIdentifier: Assembly-CSharp::LevelData
+  levelName: 3__L5
+  description: 
+  layout: 'XX..XXXXX
+
+    X...XXXXX
+
+    X.X..XXXX
+
+    X..X.S..X
+
+    .....XX..
+
+    .........
+
+    .......XX
+
+    X..X...XX
+
+    X......XX
+
+    X...G..XX'
+  solutionMoves: RRDRDLLDDLLURULUUULUULDLDDRDRDDLULULDDRDRDLDRRURRRDLL
+  enemies: []
+  requireAllVisited: 1
+  curationScore: 0
+  isFavorite: 0
+  finalOrder: 0
+  source: generated
+  difficulty: 0.92
+  cells: 54
+  interiorPillars: 2
+  chokepoints: 16
