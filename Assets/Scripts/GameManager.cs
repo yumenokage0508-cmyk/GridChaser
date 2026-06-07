@@ -6,15 +6,17 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    // 试玩目标在 SessionState 里的键（编辑器试玩工具 LevelPlaytest 与此处共用同一字符串）
-    public const string PlaytestSessionKey = "GridChaser.PlaytestLevelPath";
+    // 试玩队列在 SessionState 里的键（编辑器试玩工具 LevelPlaytest 与此处共用）
+    // 值是用 '\n' 连接的一串关卡资产路径；单关试玩就是只有一条的队列。
+    public const string PlaytestPathsKey = "GridChaser.PlaytestPaths";
 
     [Header("Level Sequence")]
     [SerializeField] private LevelData[] levels;
     private int currentLevelIndex = 0;
 
-    private LevelData playtestOverride;             // 非 null = 处于试玩模式
-    public bool IsPlaytestMode => playtestOverride != null;
+    private LevelData[] playtestLevels;             // 非空 = 处于试玩模式（单关或队列）
+    private int playtestIndex;
+    public bool IsPlaytestMode => playtestLevels != null && playtestLevels.Length > 0;
 
     private bool isGameOver = false;
     public bool IsGameOver => isGameOver;
@@ -26,16 +28,25 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
 #if UNITY_EDITOR
-        // 编辑器试玩：若设置了试玩目标，则加载它，绕过正常关卡序列
-        string p = UnityEditor.SessionState.GetString(PlaytestSessionKey, "");
-        if (!string.IsNullOrEmpty(p))
-            playtestOverride = UnityEditor.AssetDatabase.LoadAssetAtPath<LevelData>(p);
+        // 编辑器试玩：若设置了试玩队列，则加载它，绕过正常关卡序列
+        string joined = UnityEditor.SessionState.GetString(PlaytestPathsKey, "");
+        if (!string.IsNullOrEmpty(joined))
+        {
+            var list = new System.Collections.Generic.List<LevelData>();
+            foreach (string p in joined.Split('\n'))
+            {
+                if (string.IsNullOrEmpty(p)) continue;
+                LevelData ld = UnityEditor.AssetDatabase.LoadAssetAtPath<LevelData>(p);
+                if (ld != null) list.Add(ld);
+            }
+            if (list.Count > 0) { playtestLevels = list.ToArray(); playtestIndex = 0; }
+        }
 #endif
     }
 
     public LevelData GetCurrentLevel()
     {
-        if (playtestOverride != null) return playtestOverride;   // 试玩模式优先
+        if (IsPlaytestMode) return playtestLevels[playtestIndex];   // 试玩模式优先
 
         if (levels == null || levels.Length == 0)
         {
@@ -65,10 +76,10 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
 
-        // 试玩模式：通关不进下一关，重玩本关方便反复试手感
+        // 试玩模式：通关不进下一关，重玩本关（换关用 N/L 手动切）
         if (IsPlaytestMode)
         {
-            Debug.Log("试玩通关 → 重玩本关");
+            Debug.Log("试玩通关 → 重玩本关（N 下一关 / L 上一关）");
             StartCoroutine(ReloadAfterDelay(0.5f));
             return;
         }
@@ -85,7 +96,30 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 重新开始当前关：立即重载场景（试玩模式下也会重玩当前试玩关）
+    // 序列试玩：切到队列下一关（N 键；到末尾绕回开头）
+    public void AdvancePlaytest()
+    {
+        if (!IsPlaytestMode) return;
+        playtestIndex = (playtestIndex + 1) % playtestLevels.Length;
+        LoadPlaytestCurrent();
+    }
+
+    // 序列试玩：切到队列上一关（L 键；到开头绕回末尾）
+    public void RetreatPlaytest()
+    {
+        if (!IsPlaytestMode) return;
+        playtestIndex = (playtestIndex - 1 + playtestLevels.Length) % playtestLevels.Length;
+        LoadPlaytestCurrent();
+    }
+
+    private void LoadPlaytestCurrent()
+    {
+        Debug.Log($"试玩队列 → 第 {playtestIndex + 1}/{playtestLevels.Length} 关：{playtestLevels[playtestIndex].name}");
+        StopAllCoroutines();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // 重新开始当前关：立即重载场景（试玩模式下重玩当前试玩关）
     public void RestartLevel()
     {
         StopAllCoroutines();

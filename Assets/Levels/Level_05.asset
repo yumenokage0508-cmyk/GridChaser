@@ -38,3 +38,11 @@ MonoBehaviour:
   solutionMoves: 
   enemies: []
   requireAllVisited: 1
+  curationScore: 2
+  isFavorite: 0
+  finalOrder: 0
+  source: 
+  difficulty: 0
+  cells: 0
+  interiorPillars: 0
+  chokepoints: 0

@@ -2,41 +2,51 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using System.Collections.Generic;
 
 // 关卡试玩工具（编辑器）。
-// 把指定关卡设为「试玩目标」（存进 SessionState，能跨域重载存活），然后打开 Game 场景进 Play。
-// GameManager 启动时若发现试玩目标，就加载它而非正常关卡序列；停止播放时自动清除目标。
-// 4b-2 的策展窗口里每个【▶ 试玩】按钮都会调用这里的 StartPlaytest。
+// 把一关或一串关卡设为「试玩队列」（存进 SessionState，能跨域重载存活），打开 Game 场景进 Play。
+// GameManager 启动时读取队列：通关重玩本关，按 N 切下一关；停止播放时自动清除队列。
 [InitializeOnLoad]
 public static class LevelPlaytest
 {
     private const string GameScenePath = "Assets/Scenes/Game.unity";
-    private static bool pendingRestart;   // 是否"切换试玩关"导致的停止（停下后需自动重进）
+    private static bool pendingRestart;   // 是否"切换试玩目标"导致的停止（停下后需自动重进）
 
-    // [InitializeOnLoad] + 静态构造：编辑器加载时注册播放状态回调
     static LevelPlaytest()
     {
         EditorApplication.playModeStateChanged += OnPlayModeChanged;
     }
 
-    // 供菜单 / 策展窗口调用：试玩某一关
+    // 单关试玩 = 长度为 1 的队列
     public static void StartPlaytest(LevelData level)
     {
         if (level == null) return;
+        StartSequence(new List<LevelData> { level });
+    }
 
-        string path = AssetDatabase.GetAssetPath(level);
-        if (string.IsNullOrEmpty(path))
+    // 序列试玩：按给定顺序排队
+    public static void StartSequence(IList<LevelData> levels)
+    {
+        if (levels == null || levels.Count == 0) return;
+
+        var paths = new List<string>();
+        foreach (LevelData lv in levels)
         {
-            EditorUtility.DisplayDialog("试玩失败", "这个关卡还不是已保存的资产，无法试玩。", "确定");
+            if (lv == null) continue;
+            string p = AssetDatabase.GetAssetPath(lv);
+            if (!string.IsNullOrEmpty(p)) paths.Add(p);
+        }
+        if (paths.Count == 0)
+        {
+            EditorUtility.DisplayDialog("试玩失败", "选中的关卡都不是已保存的资产。", "确定");
             return;
         }
 
-        // 记下试玩目标（GameManager 启动时会读取它）
-        SessionState.SetString(GameManager.PlaytestSessionKey, path);
+        SessionState.SetString(GameManager.PlaytestPathsKey, string.Join("\n", paths));
 
         if (EditorApplication.isPlaying)
         {
-            // 正在播放别的关：先停，停下后自动重进（见 OnPlayModeChanged）
             pendingRestart = true;
             EditorApplication.isPlaying = false;
         }
@@ -46,7 +56,7 @@ public static class LevelPlaytest
         }
     }
 
-    // 测试入口（4b-1 阶段用）：试玩当前在 Project 里选中的 LevelData
+    // 测试入口：试玩当前在 Project 里选中的 LevelData
     [MenuItem("Tools/GridChaser/试玩选中的关卡")]
     public static void PlaytestSelected()
     {
@@ -65,7 +75,7 @@ public static class LevelPlaytest
         var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
         if (active.path != GameScenePath)
         {
-            EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();   // 切场景前先问要不要存当前改动
+            EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
             EditorSceneManager.OpenScene(GameScenePath);
         }
         EditorApplication.isPlaying = true;
@@ -77,14 +87,12 @@ public static class LevelPlaytest
 
         if (pendingRestart)
         {
-            // 是「切换试玩关」触发的停止：保留目标，重新进入播放
             pendingRestart = false;
             EnterPlay();
         }
         else
         {
-            // 正常停止播放：清除试玩目标，以免下次正常 Play 被劫持
-            SessionState.EraseString(GameManager.PlaytestSessionKey);
+            SessionState.EraseString(GameManager.PlaytestPathsKey);   // 正常停止：清除队列
         }
     }
 }

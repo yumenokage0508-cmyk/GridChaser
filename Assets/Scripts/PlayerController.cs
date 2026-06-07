@@ -50,6 +50,20 @@ public class PlayerController : MonoBehaviour
         // 游戏结束（通关）后锁输入，避免重载前误操作
         if (GameManager.Instance.IsGameOver) return;
 
+        // 序列试玩：按 N 切到队列下一关（仅试玩模式生效，正常游玩无反应）
+        if (keyboard.nKey.wasPressedThisFrame && GameManager.Instance.IsPlaytestMode)
+        {
+            GameManager.Instance.AdvancePlaytest();
+            return;
+        }
+
+        // 序列试玩：按 L 切到队列上一关（仅试玩模式生效）
+        if (keyboard.lKey.wasPressedThisFrame && GameManager.Instance.IsPlaytestMode)
+        {
+            GameManager.Instance.RetreatPlaytest();
+            return;
+        }
+
         // 重新开始：按 R 重载当前关
         if (keyboard.rKey.wasPressedThisFrame)
         {

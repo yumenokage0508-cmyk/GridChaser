@@ -32,7 +32,7 @@ MonoBehaviour:
   solutionMoves: URRDLDRRRRDDRUUULLUURRDRRURRULLLLULLDLULDDRDD
   enemies: []
   requireAllVisited: 1
-  curationScore: 0
+  curationScore: 1
   isFavorite: 0
   finalOrder: 0
   source: generated
