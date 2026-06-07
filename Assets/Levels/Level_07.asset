@@ -31,7 +31,7 @@ MonoBehaviour:
   enemies: []
   requireAllVisited: 1
   curationScore: 3
-  isFavorite: 0
+  isFavorite: 1
   finalOrder: 0
   source: 
   difficulty: 0

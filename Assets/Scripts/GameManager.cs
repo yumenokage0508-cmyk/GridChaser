@@ -7,11 +7,12 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     // 试玩队列在 SessionState 里的键（编辑器试玩工具 LevelPlaytest 与此处共用）
-    // 值是用 '\n' 连接的一串关卡资产路径；单关试玩就是只有一条的队列。
     public const string PlaytestPathsKey = "GridChaser.PlaytestPaths";
 
-    [Header("Level Sequence")]
-    [SerializeField] private LevelData[] levels;
+    [Header("Level Source")]
+    [Tooltip("正式关卡清单资产。由『关卡管理』窗口的【应用到游戏】写入；这里拖入引用一次即可。")]
+    [SerializeField] private LevelManifest manifest;
+
     private int currentLevelIndex = 0;
 
     private LevelData[] playtestLevels;             // 非空 = 处于试玩模式（单关或队列）
@@ -20,6 +21,9 @@ public class GameManager : MonoBehaviour
 
     private bool isGameOver = false;
     public bool IsGameOver => isGameOver;
+
+    // 正式关卡序列（从清单读）
+    private LevelData[] Levels => manifest != null ? manifest.orderedLevels : null;
 
     private void Awake()
     {
@@ -48,12 +52,14 @@ public class GameManager : MonoBehaviour
     {
         if (IsPlaytestMode) return playtestLevels[playtestIndex];   // 试玩模式优先
 
-        if (levels == null || levels.Length == 0)
+        LevelData[] lv = Levels;
+        if (lv == null || lv.Length == 0)
         {
-            Debug.LogError("GameManager: levels 数组为空。正常游玩需先在策展窗口『应用到游戏』填入关卡。");
+            Debug.LogError("GameManager: 关卡清单为空。请在『关卡管理』窗口收藏关卡并点【应用到游戏】，" +
+                           "并把 LevelManifest 拖到 GameManager 的 Manifest 字段。");
             return null;
         }
-        return levels[currentLevelIndex];
+        return lv[currentLevelIndex];
     }
 
     public void ResetGameState()
@@ -84,7 +90,8 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (currentLevelIndex < levels.Length - 1)
+        LevelData[] lv = Levels;
+        if (lv != null && currentLevelIndex < lv.Length - 1)
         {
             currentLevelIndex++;
             Debug.Log($"WIN → 加载第 {currentLevelIndex + 1} 关");
