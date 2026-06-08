@@ -34,6 +34,14 @@ public class CurationWindow : EditorWindow
     private string renameBuffer;
     private bool focusPending;
 
+    // 撤销/重做（只覆盖 打分/收藏/最终顺序；仅窗口内有效，不跨重启）
+    private readonly Stack<CState> undoStack = new Stack<CState>();
+    private readonly Stack<CState> redoStack = new Stack<CState>();
+    private class CState { public Dictionary<LevelData, (int s, bool f, int o)> map; }
+
+    private HashSet<string> playtestSet = new HashSet<string>();   // 当前正在试玩的关卡路径
+    private int lastClickedIndex = -1;                             // Shift 连选锚点（显示列表内）
+
     [MenuItem("Tools/GridChaser/关卡管理")]
     public static void Open() => GetWindow<CurationWindow>("关卡管理");
 
@@ -54,6 +62,8 @@ public class CurationWindow : EditorWindow
 
     private void OnGUI()
     {
+        HandleUndoShortcuts();
+        RefreshPlaytestSet();
         DrawTabs();
         if (tab == Tab.正式视图) DrawFinalBar();
         DrawToolbar();
@@ -100,6 +110,12 @@ public class CurationWindow : EditorWindow
             EditorGUILayout.LabelField("筛选", GUILayout.Width(30));
             filter = (FilterMode)EditorGUILayout.EnumPopup(filter, EditorStyles.toolbarPopup, GUILayout.Width(80));
         }
+        if (GUILayout.Button("新建关卡", EditorStyles.toolbarButton, GUILayout.Width(64)))
+            EditorApplication.delayCall += () => LevelEditorWindow.OpenBlank();
+        using (new EditorGUI.DisabledScope(undoStack.Count == 0))
+            if (GUILayout.Button("撤销", EditorStyles.toolbarButton, GUILayout.Width(45))) Undo();
+        using (new EditorGUI.DisabledScope(redoStack.Count == 0))
+            if (GUILayout.Button("重做", EditorStyles.toolbarButton, GUILayout.Width(45))) Redo();
         if (GUILayout.Button("刷新", EditorStyles.toolbarButton, GUILayout.Width(45))) Refresh();
         EditorGUILayout.EndHorizontal();
     }
@@ -164,12 +180,24 @@ public class CurationWindow : EditorWindow
         bool wantConfirmRename = false;
 
         Color oldBg = GUI.backgroundColor;
-        if (!l.solvable) GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);   // 不可解：行泛红
+        string assetPath = AssetDatabase.GetAssetPath(l);
+        if (playtestSet.Contains(assetPath)) GUI.backgroundColor = new Color(0.6f, 1f, 0.6f);  // 正在试玩：泛绿
+        else if (!l.solvable) GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);                  // 不可解：泛红
         EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
 
         bool sel = selected.Contains(l);
         bool newSel = EditorGUILayout.Toggle(sel, GUILayout.Width(20));
-        if (newSel != sel) { if (newSel) selected.Add(l); else selected.Remove(l); SaveSelection(); }
+        if (newSel != sel)
+        {
+            if (Event.current.shift && lastClickedIndex >= 0 && lastClickedIndex < list.Count)
+            {
+                int lo = Mathf.Min(lastClickedIndex, index), hi = Mathf.Max(lastClickedIndex, index);
+                for (int k = lo; k <= hi; k++) selected.Add(list[k]);   // 连选：锚点到本行全选
+            }
+            else { if (newSel) selected.Add(l); else selected.Remove(l); }
+            lastClickedIndex = index;
+            SaveSelection();
+        }
 
         // 最终顺序模式：序号 + ▲▼
         if (reorder)
@@ -207,7 +235,7 @@ public class CurationWindow : EditorWindow
         DrawStars(l);
 
         bool fav = EditorGUILayout.ToggleLeft(" ", l.isFavorite, GUILayout.Width(54));
-        if (fav != l.isFavorite) { l.isFavorite = fav; EditorUtility.SetDirty(l); dirty = true; }
+        if (fav != l.isFavorite) { PushUndo(); l.isFavorite = fav; EditorUtility.SetDirty(l); dirty = true; }
 
         // 编辑：用手搓编辑器载入这一关
         if (GUILayout.Button("✎", GUILayout.Width(24)))
@@ -260,6 +288,7 @@ public class CurationWindow : EditorWindow
             if (GUILayout.Button(on ? "★" : "☆", EditorStyles.label, GUILayout.Width(16)))
             {
                 int target = (i == l.curationScore) ? 0 : i;
+                PushUndo();
                 if (selected.Contains(l))
                     foreach (LevelData s in selected) SetScore(s, target);
                 else
@@ -307,11 +336,13 @@ public class CurationWindow : EditorWindow
 
     private void BatchAddStar(int delta)
     {
+        PushUndo();
         foreach (LevelData l in selected) SetScore(l, l.curationScore + delta);
     }
 
     private void BatchFavorite(bool v)
     {
+        PushUndo();
         foreach (LevelData l in selected) { l.isFavorite = v; EditorUtility.SetDirty(l); }
         dirty = true;
     }
@@ -361,6 +392,7 @@ public class CurationWindow : EditorWindow
     // 激活时把已收藏关卡的 finalOrder 规整成连续 0,1,2…，方便用 ▲▼ 交换。
     private void EnterFinalOrderMode()
     {
+        PushUndo();
         var favs = all.Where(l => l.isFavorite).OrderBy(l => l.finalOrder).ThenBy(l => l.name).ToList();
         for (int i = 0; i < favs.Count; i++) { favs[i].finalOrder = i; EditorUtility.SetDirty(favs[i]); }
         dirty = true;
@@ -370,6 +402,7 @@ public class CurationWindow : EditorWindow
     {
         int j = i + delta;
         if (j < 0 || j >= list.Count) return;
+        PushUndo();
         int tmp = list[i].finalOrder; list[i].finalOrder = list[j].finalOrder; list[j].finalOrder = tmp;
         EditorUtility.SetDirty(list[i]); EditorUtility.SetDirty(list[j]);
         dirty = true;
@@ -393,8 +426,7 @@ public class CurationWindow : EditorWindow
         AssetDatabase.SaveAssets();
 
         EditorUtility.DisplayDialog("完成",
-            $"已写入 {favs.Count} 关到 {AssetDatabase.GetAssetPath(manifest)}。\n\n" +
-            "若是首次：请把这个 LevelManifest 拖到场景里 GameManager 的 Manifest 字段（只需设置一次）。", "好的");
+            $"已写入 {favs.Count} 关到 {AssetDatabase.GetAssetPath(manifest)}。", "好的");
     }
 
     private LevelManifest FindOrCreateManifest()
@@ -411,6 +443,64 @@ public class CurationWindow : EditorWindow
     }
 
     // ---- 选中状态持久化（跨进出 Play Mode）----
+    // ---------- 撤销/重做 ----------
+    private CState Snapshot()
+    {
+        var st = new CState { map = new Dictionary<LevelData, (int, bool, int)>() };
+        foreach (LevelData l in all) if (l != null) st.map[l] = (l.curationScore, l.isFavorite, l.finalOrder);
+        return st;
+    }
+
+    // 在每个会改 打分/收藏/最终顺序 的操作发生【前】调用
+    private void PushUndo() { undoStack.Push(Snapshot()); redoStack.Clear(); }
+
+    private void Restore(CState st)
+    {
+        foreach (var kv in st.map)
+        {
+            if (kv.Key == null) continue;
+            kv.Key.curationScore = kv.Value.s;
+            kv.Key.isFavorite = kv.Value.f;
+            kv.Key.finalOrder = kv.Value.o;
+            EditorUtility.SetDirty(kv.Key);
+        }
+        dirty = true;
+    }
+
+    private void Undo()
+    {
+        if (undoStack.Count == 0) return;
+        redoStack.Push(Snapshot());
+        Restore(undoStack.Pop());
+        Repaint();
+    }
+
+    private void Redo()
+    {
+        if (redoStack.Count == 0) return;
+        undoStack.Push(Snapshot());
+        Restore(redoStack.Pop());
+        Repaint();
+    }
+
+    private void HandleUndoShortcuts()
+    {
+        Event e = Event.current;
+        if (e.type != EventType.KeyDown || !(e.control || e.command)) return;
+        if (e.keyCode == KeyCode.Z) { if (e.shift) Redo(); else Undo(); e.Use(); }
+        else if (e.keyCode == KeyCode.Y) { Redo(); e.Use(); }
+    }
+
+    // 读取 GameManager 写入的试玩路径队列，得到"正在试玩"的关卡集合
+    private void RefreshPlaytestSet()
+    {
+        playtestSet.Clear();
+        string raw = SessionState.GetString("GridChaser.PlaytestPaths", "");
+        if (string.IsNullOrEmpty(raw)) return;
+        foreach (string p in raw.Split('\n'))
+            if (!string.IsNullOrEmpty(p)) playtestSet.Add(p);
+    }
+
     private void SaveSelection()
     {
         SessionState.SetString(SelKey,

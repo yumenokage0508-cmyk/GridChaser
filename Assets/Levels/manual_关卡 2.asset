@@ -10,38 +10,38 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b545ebc6f246174f90b4830bc6f899f, type: 3}
-  m_Name: "manual_\u5173\u5361"
+  m_Name: "manual_\u5173\u5361 2"
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
-  levelName: "manual_\u5173\u5361"
+  levelName: "manual_\u5173\u5361 2"
   description: 
-  layout: 'XXXXXX...XXX
+  layout: 'XXXXXXXXXXXX...XXX
 
-    XXXX.....XXX
+    X.....XXXXX......X
 
-    XXXX.......X
+    X.XXX..XXXX......X
 
-    XXX....X...X
+    X.XXXX.X.GXX......
 
-    XXX..X....XS
+    X..XS..X..........
 
-    .....XX...X.
+    ...XXXXXXXX..X.X..
 
-    ....XXXX..X.
+    ..XXXXX..XXXX..XXX
 
-    ....X.G..X..
+    .....X...XXX..XXXX
 
-    .X....X....X
+    ...X...X.....XXXXX
 
-    ...XXXX....X'
-  solutionMoves: DDDLDDLULDLUURURUUURULLDDDLULULURRURULLDLLDDLDRDLDDLUULLDRDLDDRRURRRUR
+    X..XXXXXXXXXXXXXXX'
+  solutionMoves: RRUULULLLLDDDRDLLDRDLDRDRUURRDRRURURDDRRRRURURUULURRDRDRUULUULDLLURULLDLDRDDDLULLLUR
   enemies: []
   requireAllVisited: 1
-  curationScore: 4
+  curationScore: 5
   isFavorite: 1
   finalOrder: 0
   source: manual
   solvable: 1
-  difficulty: 0.9866667
-  cells: 71
+  difficulty: 1
+  cells: 85
   interiorPillars: 0
   chokepoints: 0

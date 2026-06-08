@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 // 可视化手搓关卡编辑器（4c-1：画布 + 笔刷 + 撤回/重做 + 保存）。
 // 无限画布，概念上初始全是墙，开发者挖出空地、放起点/终点。
@@ -36,10 +38,101 @@ public class LevelEditorWindow : EditorWindow
     private int pickerId = -1;
     private bool pendingPick;
 
+    // 跨播放模式保存画布的 SessionState 键
+    private const string K_Cells = "GridChaser.Editor.Cells";
+    private const string K_Start = "GridChaser.Editor.Start";
+    private const string K_Goal = "GridChaser.Editor.Goal";
+    private const string K_Name = "GridChaser.Editor.Name";
+    private const string K_Asset = "GridChaser.Editor.Asset";
+    private const string K_Dirty = "GridChaser.Editor.Dirty";
+
+    private bool dirtySinceSave;        // 自上次保存到资产以来有无改动（关闭提示用）
+    private bool pendingFit;            // 待执行一次"聚焦适配"（载入/点按钮后置位）
+    private Rect lastCanvas;            // 最近一帧的画布区域（聚焦计算用）
+
+    private void OnEnable()
+    {
+        LoadCanvasState();
+        EditorApplication.update += PollSolve;   // 轮询后台结果，回主线程刷新
+    }
+
+    private void OnDisable()
+    {
+        SaveCanvasState();                       // 进出播放模式/关闭时触发，画布不丢
+        EditorApplication.update -= PollSolve;
+        solveCts?.Cancel();                      // 取消可能在跑的后台求解
+    }
+
+    // 把画布编码进 SessionState（Dictionary 不被 Unity 序列化，需手动持久化）
+    private void SaveCanvasState()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var kv in cells)
+            sb.Append(kv.Key.x).Append(',').Append(kv.Key.y).Append(',').Append((int)kv.Value).Append(';');
+        SessionState.SetString(K_Cells, sb.ToString());
+        SessionState.SetString(K_Start, start.HasValue ? $"{start.Value.x},{start.Value.y}" : "");
+        SessionState.SetString(K_Goal, goal.HasValue ? $"{goal.Value.x},{goal.Value.y}" : "");
+        SessionState.SetString(K_Name, levelName ?? "");
+        SessionState.SetString(K_Asset, editingAsset != null ? AssetDatabase.GetAssetPath(editingAsset) : "");
+        SessionState.SetBool(K_Dirty, dirtySinceSave);
+    }
+
+    private void LoadCanvasState()
+    {
+        string cs = SessionState.GetString(K_Cells, null);
+        if (cs == null) return;   // 从未保存过 → 保持空白
+        cells.Clear(); start = null; goal = null;
+        foreach (string part in cs.Split(';'))
+        {
+            if (string.IsNullOrEmpty(part)) continue;
+            string[] a = part.Split(',');
+            cells[new Vector2Int(int.Parse(a[0]), int.Parse(a[1]))] = (CellKind)int.Parse(a[2]);
+        }
+        string ss = SessionState.GetString(K_Start, "");
+        if (!string.IsNullOrEmpty(ss)) { var a = ss.Split(','); start = new Vector2Int(int.Parse(a[0]), int.Parse(a[1])); }
+        string gs = SessionState.GetString(K_Goal, "");
+        if (!string.IsNullOrEmpty(gs)) { var a = gs.Split(','); goal = new Vector2Int(int.Parse(a[0]), int.Parse(a[1])); }
+        levelName = SessionState.GetString(K_Name, "manual_关卡");
+        string ap = SessionState.GetString(K_Asset, "");
+        editingAsset = string.IsNullOrEmpty(ap) ? null : AssetDatabase.LoadAssetAtPath<LevelData>(ap);
+        dirtySinceSave = SessionState.GetBool(K_Dirty, false);
+        validateDirty = true; pendingFit = true;
+    }
+
+    // 关闭窗口：若有未保存为资产的内容，提醒保存
+    private void OnDestroy()
+    {
+        if (!dirtySinceSave || cells.Count == 0) return;
+
+        // 三选：另存为(0) / 取消(1，叉掉或Esc也返回此值) / 不保存关闭(2)
+        int choice = EditorUtility.DisplayDialogComplex("未保存",
+            "编辑器里还有未保存为资产的关卡内容。", "另存为", "取消", "不保存关闭");
+
+        if (choice == 0) Save(true);
+        else if (choice == 1)
+        {
+            // 取消/叉掉：无视这次关闭，重新打开编辑器并从 SessionState 恢复原样
+            EditorApplication.delayCall += () =>
+            {
+                var w = GetWindow<LevelEditorWindow>("关卡编辑器");
+                w.Focus();
+            };
+        }
+        // choice == 2：什么都不做，正常关闭
+    }
+
     // ---- 校验缓存（避免每帧重算）----
     private OneStrokeSolver.Result lastResult;
     private float lastDifficulty;
     private bool validateDirty = true;   // 画布变动后置脏，下次状态栏按需重算
+
+    // 后台异步求解（避免主线程阻塞造成卡顿）
+    private CancellationTokenSource solveCts;
+    private bool validating;             // 后台正在求解
+    private volatile bool solveDone;     // 后台算完待回主线程
+    private OneStrokeSolver.Result solveResult;
+    private float solveDiff;
+    private readonly object solveLock = new object();
 
     // ---- 撤回/重做 ----
     private class Snap { public Dictionary<Vector2Int, CellKind> cells; public Vector2Int? start, goal; }
@@ -70,10 +163,30 @@ public class LevelEditorWindow : EditorWindow
         w.Focus();
     }
 
+    // 供关卡管理窗口【新建关卡】调用：打开一个空白画布
+    public static void OpenBlank()
+    {
+        var w = GetWindow<LevelEditorWindow>("关卡编辑器");
+        w.Focus();
+        if (w.ConfirmDiscard()) w.NewBlank();
+    }
+
+    // 重置为全新空白关卡
+    private void NewBlank()
+    {
+        cells.Clear(); start = null; goal = null;
+        undo.Clear(); redo.Clear();
+        editingAsset = null;
+        levelName = "manual_关卡";
+        dirtySinceSave = false;
+        validateDirty = true;
+        Repaint();
+    }
+
     // 载入已有关卡资产（可覆盖保存它）
     public void LoadFromLevelData(LevelData d)
     {
-        if (d == null) return;
+        if (d == null || !ConfirmDiscard()) return;
         ParseLayout(d.layout);
         editingAsset = d;
         levelName = d.name;
@@ -82,8 +195,17 @@ public class LevelEditorWindow : EditorWindow
     // 载入粘贴的文本（视为全新关卡，只能另存为）
     public void LoadFromLayoutText(string text)
     {
+        if (!ConfirmDiscard()) return;
         ParseLayout(text);
         editingAsset = null;
+    }
+
+    // 当前画布非空则询问是否放弃，避免覆盖未保存内容
+    private bool ConfirmDiscard()
+    {
+        if (cells.Count == 0) return true;
+        return EditorUtility.DisplayDialog("放弃当前内容？",
+            "当前画布有内容且可能未保存，载入新关卡会覆盖它。继续吗？", "继续载入", "取消");
     }
 
     // 反解析：把 X.GS 字符串变回画布字典（保存的逆操作）。行号即 y，与保存/游戏读法一致。
@@ -108,8 +230,7 @@ public class LevelEditorWindow : EditorWindow
             }
         }
         undo.Clear(); redo.Clear();
-        validateDirty = true;
-        pan = new Vector2(40, 40);
+        validateDirty = true; dirtySinceSave = true; pendingFit = true;
         Repaint();
     }
 
@@ -117,6 +238,9 @@ public class LevelEditorWindow : EditorWindow
     {
         const float topH = 46, botH = 22;
         Rect canvas = new Rect(0, topH, position.width, position.height - topH - botH);
+        lastCanvas = canvas;
+
+        if (pendingFit && Event.current.type == EventType.Repaint) { pendingFit = false; FocusFit(); }
 
         HandleImportPicker();
         DrawToolbar(new Rect(0, 0, position.width, topH));
@@ -145,17 +269,34 @@ public class LevelEditorWindow : EditorWindow
         }
         if (GUILayout.Button("▶ 试玩", EditorStyles.toolbarButton, GUILayout.Width(50)))
         {
-            if (editingAsset != null)
+            // 有未保存改动：先问。试玩加载的是磁盘上已保存的版本，所以必须先落盘
+            bool cancelledSave = false;
+            if (dirtySinceSave)
             {
-                LevelData target = editingAsset;
-                EditorApplication.delayCall += () => LevelPlaytest.StartPlaytest(target);
+                // 保存(0) / 另存为(1) / 取消(2，叉掉或Esc也返回此值)
+                int c = EditorUtility.DisplayDialogComplex("试玩前保存",
+                    "当前关卡有未保存的改动，试玩会加载已保存的版本。", "保存", "另存为", "取消");
+                if (c == 2) cancelledSave = true;                       // 取消：不试玩
+                else if (c == 0 && editingAsset != null) Save(false);   // 保存：覆盖原关卡
+                else Save(true);                                        // 另存为
             }
-            else EditorUtility.DisplayDialog("先保存", "新关卡需要先『另存为』成资产后才能试玩。", "确定");
+
+            // 没取消，且有资产才能试玩
+            if (!cancelledSave)
+            {
+                if (editingAsset != null)
+                {
+                    LevelData target = editingAsset;
+                    EditorApplication.delayCall += () => LevelPlaytest.StartPlaytest(target);
+                }
+                else EditorUtility.DisplayDialog("先保存", "需要先把关卡保存为资产才能试玩。", "确定");
+            }
         }
         GUILayout.Space(8);
         if (GUILayout.Button("撤回", EditorStyles.toolbarButton, GUILayout.Width(45))) Undo();
         if (GUILayout.Button("重做", EditorStyles.toolbarButton, GUILayout.Width(45))) Redo();
         if (GUILayout.Button("清空", EditorStyles.toolbarButton, GUILayout.Width(45))) ResetCanvas();
+        if (GUILayout.Button("聚焦", EditorStyles.toolbarButton, GUILayout.Width(45))) { pendingFit = true; Repaint(); }
 
         GUILayout.FlexibleSpace();
 
@@ -171,9 +312,10 @@ public class LevelEditorWindow : EditorWindow
 
     private void DrawStatusBar(Rect area)
     {
-        EnsureValidated();
-        string verdict = lastResult != null ? lastResult.Message : "";
-        if (lastResult != null && lastResult.Solvable) verdict += $"（难度 {lastDifficulty:0.00}）";
+        EnsureValidationStarted();
+        string verdict = validating ? "校验中…"
+            : (lastResult != null ? lastResult.Message : "");
+        if (!validating && lastResult != null && lastResult.Solvable) verdict += $"（难度 {lastDifficulty:0.00}）";
 
         GUILayout.BeginArea(area, EditorStyles.helpBox);
         GUILayout.Label(
@@ -181,6 +323,25 @@ public class LevelEditorWindow : EditorWindow
             "（左键画 / 右键框选 / Alt 临时切挖空填墙 / 中键平移 / 滚轮缩放 / Ctrl+Z 撤回 / Ctrl+Y 重做）",
             EditorStyles.miniLabel);
         GUILayout.EndArea();
+    }
+
+    // ---------- 聚焦适配：把有内容的格子缩放平移到填满视图（四周留约一格边）----------
+    private void FocusFit()
+    {
+        if (cells.Count == 0 || lastCanvas.width < 1) return;
+        int minX = cells.Keys.Min(p => p.x), maxX = cells.Keys.Max(p => p.x);
+        int minY = cells.Keys.Min(p => p.y), maxY = cells.Keys.Max(p => p.y);
+        int w = maxX - minX + 1, h = maxY - minY + 1;
+        const float margin = 1f;   // 四周各留约一格
+
+        float pxX = lastCanvas.width / (w + margin * 2f);
+        float pxY = lastCanvas.height / (h + margin * 2f);
+        cellPx = Mathf.Clamp(Mathf.Min(pxX, pxY), 6f, 48f);
+
+        // 让内容中心对齐画布中心
+        Vector2 centerGrid = new Vector2(minX + w / 2f, minY + h / 2f);
+        pan = new Vector2(lastCanvas.width / 2f, lastCanvas.height / 2f) - centerGrid * cellPx;
+        Repaint();
     }
 
     // ---------- 导入：从已有关卡载入（对象选择器）----------
@@ -203,16 +364,54 @@ public class LevelEditorWindow : EditorWindow
 
     // ---------- 校验 ----------
     // 把当前空地集合(含 S/G)交给求解器，缓存结果；只在画布变动后重算
-    private void EnsureValidated()
+    // 若画布有变动且没有正在跑的任务，则启动一次后台求解（不阻塞绘制）
+    private void EnsureValidationStarted()
     {
-        if (!validateDirty) return;
+        if (!validateDirty || validating) return;
         validateDirty = false;
+        validating = true;
 
+        // 在主线程拍快照后再交给后台线程，避免线程读取期间主线程改动 cells
+        var set = new HashSet<Vector2Int>(cells.Keys);
+        Vector2Int? s0 = start, g0 = goal;
+
+        solveCts?.Cancel();
+        solveCts = new CancellationTokenSource();
+        var token = solveCts.Token;
+
+        Task.Run(() =>
+        {
+            var r = OneStrokeSolver.Solve(set, s0, g0, token);
+            float diff = r.Solvable ? OneStrokeSolver.EstimateDifficulty(set, s0.Value, g0.Value, 150, token) : 0f;
+            if (token.IsCancellationRequested) return;   // 已被新改动取消，丢弃
+            lock (solveLock) { solveResult = r; solveDiff = diff; solveDone = true; }
+        }, token);
+    }
+
+    // EditorApplication.update 轮询：后台算完后回主线程刷新状态栏
+    private void PollSolve()
+    {
+        if (!solveDone) return;
+        lock (solveLock)
+        {
+            lastResult = solveResult;
+            lastDifficulty = solveDiff;
+            solveDone = false;
+        }
+        validating = false;
+        if (validateDirty) EnsureValidationStarted();   // 期间又改了，再算一轮
+        Repaint();
+    }
+
+    // 同步校验（保存时用：必须立即拿到确定结果才能写入 solvable）
+    private void ValidateNow()
+    {
         var set = new HashSet<Vector2Int>(cells.Keys);
         lastResult = OneStrokeSolver.Solve(set, start, goal);
         lastDifficulty = lastResult.Solvable
             ? OneStrokeSolver.EstimateDifficulty(set, start.Value, goal.Value)
             : 0f;
+        validateDirty = false;
     }
 
     // ---------- 坐标换算 ----------
@@ -331,7 +530,7 @@ public class LevelEditorWindow : EditorWindow
 
     private void PaintCell(Vector2Int p)
     {
-        validateDirty = true;
+        validateDirty = true; dirtySinceSave = true;
         switch (EffectiveBrush())
         {
             case Brush.填墙:
@@ -462,7 +661,7 @@ public class LevelEditorWindow : EditorWindow
             }
         }
 
-        EnsureValidated();   // 确保校验结果是最新的
+        ValidateNow();   // 保存必须同步拿到确定结果，才能正确写入 solvable
 
         d.levelName = System.IO.Path.GetFileNameWithoutExtension(path);
         d.layout = layout;
@@ -481,6 +680,12 @@ public class LevelEditorWindow : EditorWindow
 
         EditorUtility.SetDirty(d);
         AssetDatabase.SaveAssets();
+
+        // 保存后编辑器接管这个资产：之后"保存"可覆盖它；选"创建副本"时也会切到副本
+        editingAsset = d;
+        levelName = d.name;
+        dirtySinceSave = false;
+
         EditorGUIUtility.PingObject(d);
         EditorUtility.DisplayDialog("已保存", $"关卡已保存到：\n{path}\n（已进入关卡管理窗口的候选库）", "好的");
     }

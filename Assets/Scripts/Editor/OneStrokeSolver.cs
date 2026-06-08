@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 // 一笔画关卡求解/评估工具（编辑器期用）。
@@ -7,7 +8,7 @@ using UnityEngine;
 // 提供：可解校验(带剪枝 DFS 找哈密顿路径，产出解法)、难度估计(Warnsdorff 贪心试玩)。
 public static class OneStrokeSolver
 {
-    public const int NodeLimit = 2_000_000;   // DFS 节点上限，超过判“未确定”，防极端图卡死
+    public const int NodeLimit = 8_000_000;   // DFS 节点上限，超过判“未确定”，防极端图卡死
 
     // 编辑器坐标 y 向下；映射到游戏方向：上移(y-1)=U，下移(y+1)=D，左=L，右=R
     private static readonly Vector2Int[] Dirs =
@@ -34,7 +35,8 @@ public static class OneStrokeSolver
     }
 
     // 主入口：校验 cells(空地集合) 在给定起终点下是否可解
-    public static Result Solve(HashSet<Vector2Int> cells, Vector2Int? start, Vector2Int? goal)
+    public static Result Solve(HashSet<Vector2Int> cells, Vector2Int? start, Vector2Int? goal,
+                               CancellationToken token = default)
     {
         var r = new Result();
         if (!start.HasValue) { r.status = Status.NoStart; return r; }
@@ -46,7 +48,7 @@ public static class OneStrokeSolver
         int nodes = 0;
         bool timeout = false;
 
-        bool found = Dfs(cells, goal.Value, start.Value, visited, path, ref nodes, ref timeout);
+        bool found = Dfs(cells, goal.Value, start.Value, visited, path, ref nodes, ref timeout, token);
 
         if (timeout) { r.status = Status.Timeout; return r; }
         if (!found) { r.status = Status.NoSolution; return r; }
@@ -57,11 +59,13 @@ public static class OneStrokeSolver
 
     // 带剪枝的 DFS：Warnsdorff 启发式（优先走“出口最少”的邻居）+ 终点必须最后到
     private static bool Dfs(HashSet<Vector2Int> cells, Vector2Int goal, Vector2Int pos,
-                            HashSet<Vector2Int> visited, List<Vector2Int> path, ref int nodes, ref bool timeout)
+                            HashSet<Vector2Int> visited, List<Vector2Int> path, ref int nodes, ref bool timeout,
+                            CancellationToken token)
     {
         if (visited.Count == cells.Count) return pos == goal;
 
         if (++nodes > NodeLimit) { timeout = true; return false; }
+        if ((nodes & 0xFFFF) == 0 && token.IsCancellationRequested) { timeout = true; return false; }   // 每 6.5 万节点查一次取消
 
         // 收集候选邻居：未访问、在空地内；终点只允许在最后一步进入
         var cand = new List<Vector2Int>(4);
@@ -80,7 +84,7 @@ public static class OneStrokeSolver
         foreach (var nb in cand)
         {
             visited.Add(nb); path.Add(nb);
-            if (Dfs(cells, goal, nb, visited, path, ref nodes, ref timeout)) return true;
+            if (Dfs(cells, goal, nb, visited, path, ref nodes, ref timeout, token)) return true;
             if (timeout) return false;
             visited.Remove(nb); path.RemoveAt(path.Count - 1);
         }
@@ -132,13 +136,17 @@ public static class OneStrokeSolver
     }
 
     // ---- 难度估计：Warnsdorff 贪心试玩 rollouts 次，难度 = 1 - 通关率 ----
-    public static float EstimateDifficulty(HashSet<Vector2Int> cells, Vector2Int start, Vector2Int goal, int rollouts = 150)
+    public static float EstimateDifficulty(HashSet<Vector2Int> cells, Vector2Int start, Vector2Int goal,
+                                           int rollouts = 150, CancellationToken token = default)
     {
         if (cells.Count <= 1) return 0f;
         var rng = new System.Random(12345);   // 固定种子，结果稳定可复现
         int wins = 0;
         for (int i = 0; i < rollouts; i++)
+        {
+            if (token.IsCancellationRequested) break;
             if (GreedyRollout(cells, start, goal, rng)) wins++;
+        }
         return 1f - (float)wins / rollouts;
     }
 

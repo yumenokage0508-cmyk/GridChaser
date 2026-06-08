@@ -18,13 +18,13 @@ MonoBehaviour:
 
     .......X
 
-    ..GX...X
+    ..GX....
 
-    X....X.X
+    X....X..
 
-    X..X...X
+    X..X....
 
-    XXXX...X
+    XXXX....
 
     XXXXX..X
 
@@ -35,15 +35,15 @@ MonoBehaviour:
     XXXX..S.
 
     XXXX....'
-  solutionMoves: RDLLLURURULURULLURRUUUULDDLDLLDLUULURURRRDLLD
+  solutionMoves: RDLLLURURULURURUUULDDLDLUULLDLUULURURRRRRDLDLULLD
   enemies: []
   requireAllVisited: 1
-  curationScore: 0
-  isFavorite: 0
+  curationScore: 5
+  isFavorite: 1
   finalOrder: 0
   source: manual
   solvable: 1
-  difficulty: 0.8
-  cells: 46
+  difficulty: 0.9066667
+  cells: 50
   interiorPillars: 0
   chokepoints: 0
