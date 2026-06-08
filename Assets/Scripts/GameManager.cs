@@ -73,6 +73,7 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
+        AudioManager.Instance?.PlayDeath();
         Debug.Log("DEAD");
         StartCoroutine(ReloadAfterDelay(0.5f));
     }
@@ -81,6 +82,7 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
+        AudioManager.Instance?.PlayWin();
 
         // 试玩模式：通关不进下一关，重玩本关（换关用 N/L 手动切）
         if (IsPlaytestMode)

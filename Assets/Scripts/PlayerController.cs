@@ -120,6 +120,8 @@ public class PlayerController : MonoBehaviour
         // —— 视觉滑动：仅 transform 走协程，逻辑已经到位 ——
         StartCoroutine(AnimateMove(transform.position, GridManager.Instance.GridToWorld(gridPos)));
 
+        AudioManager.Instance?.PlayMove();   // 移动音效（AudioManager 不在场景时为 null，自动跳过）
+
         GridManager.Instance.SetVisited(prevPos);
 
         // 死亡检查①——敌人停用时 Instance 为 null，整段自动跳过（当前游戏无死亡）
