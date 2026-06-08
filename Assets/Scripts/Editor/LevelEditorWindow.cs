@@ -32,6 +32,11 @@ public class LevelEditorWindow : EditorWindow
     private bool boxing;
     private Vector2Int boxStart, boxEnd;
 
+    // ---- 校验缓存（避免每帧重算）----
+    private OneStrokeSolver.Result lastResult;
+    private float lastDifficulty;
+    private bool validateDirty = true;   // 画布变动后置脏，下次状态栏按需重算
+
     // ---- 撤回/重做 ----
     private class Snap { public Dictionary<Vector2Int, CellKind> cells; public Vector2Int? start, goal; }
     private readonly Stack<Snap> undo = new Stack<Snap>();
@@ -88,12 +93,30 @@ public class LevelEditorWindow : EditorWindow
 
     private void DrawStatusBar(Rect area)
     {
+        EnsureValidated();
+        string verdict = lastResult != null ? lastResult.Message : "";
+        if (lastResult != null && lastResult.Solvable) verdict += $"（难度 {lastDifficulty:0.00}）";
+
         GUILayout.BeginArea(area, EditorStyles.helpBox);
         GUILayout.Label(
-            $"空地 {cells.Count}   起点 {(start.HasValue ? "✓" : "✗")}   终点 {(goal.HasValue ? "✓" : "✗")}   " +
-            $"缩放 {cellPx:0}px    （左键画 / 右键框选 / 中键拖平移 / 滚轮缩放 / Ctrl+Z 撤回 / Ctrl+Y 重做）",
+            $"空地 {cells.Count}   {verdict}   缩放 {cellPx:0}px    " +
+            "（左键画 / 右键框选 / Alt 临时切挖空填墙 / 中键平移 / 滚轮缩放 / Ctrl+Z 撤回 / Ctrl+Y 重做）",
             EditorStyles.miniLabel);
         GUILayout.EndArea();
+    }
+
+    // ---------- 校验 ----------
+    // 把当前空地集合(含 S/G)交给求解器，缓存结果；只在画布变动后重算
+    private void EnsureValidated()
+    {
+        if (!validateDirty) return;
+        validateDirty = false;
+
+        var set = new HashSet<Vector2Int>(cells.Keys);
+        lastResult = OneStrokeSolver.Solve(set, start, goal);
+        lastDifficulty = lastResult.Solvable
+            ? OneStrokeSolver.EstimateDifficulty(set, start.Value, goal.Value)
+            : 0f;
     }
 
     // ---------- 坐标换算 ----------
@@ -212,6 +235,7 @@ public class LevelEditorWindow : EditorWindow
 
     private void PaintCell(Vector2Int p)
     {
+        validateDirty = true;
         switch (EffectiveBrush())
         {
             case Brush.填墙:
@@ -260,6 +284,7 @@ public class LevelEditorWindow : EditorWindow
         if (!EditorUtility.DisplayDialog("清空画布", "确定清空当前所有内容吗？此操作不可撤销。", "清空", "取消")) return;
         cells.Clear(); start = null; goal = null;
         undo.Clear(); redo.Clear();
+        validateDirty = true;
         Repaint();
     }
 
@@ -271,7 +296,7 @@ public class LevelEditorWindow : EditorWindow
         goal = goal
     };
 
-    private void Apply(Snap s) { cells = new Dictionary<Vector2Int, CellKind>(s.cells); start = s.start; goal = s.goal; }
+    private void Apply(Snap s) { cells = new Dictionary<Vector2Int, CellKind>(s.cells); start = s.start; goal = s.goal; validateDirty = true; }
 
     private void PushUndo() { undo.Push(MakeSnap()); redo.Clear(); }
 
@@ -341,15 +366,18 @@ public class LevelEditorWindow : EditorWindow
             }
         }
 
+        EnsureValidated();   // 确保校验结果是最新的
+
         d.levelName = System.IO.Path.GetFileNameWithoutExtension(path);
         d.layout = layout;
-        d.solutionMoves = "";                       // 4c-2 计算
+        d.solutionMoves = lastResult != null ? lastResult.solutionMoves : "";
         d.requireAllVisited = true;
         d.enemies = new LevelData.EnemyConfig[0];
         d.source = "manual";
-        d.difficulty = 0f;                          // 4c-2 计算
+        d.solvable = lastResult != null && lastResult.Solvable;
+        d.difficulty = lastDifficulty;
         d.cells = cells.Count;
-        d.interiorPillars = 0;
+        d.interiorPillars = 0;       // 手搓暂不统计这两项结构指标
         d.chokepoints = 0;
         d.curationScore = 0;
         d.isFavorite = false;

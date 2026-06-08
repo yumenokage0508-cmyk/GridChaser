@@ -32,7 +32,10 @@ public class LevelData : ScriptableObject
     [Tooltip("来源：generated = 生成器导入；manual = 手工编辑器制作。")]
     public string source;
 
-    [Tooltip("生成器估计的难度：0 最易 ~ 1 最难。手工关卡可留空。")]
+    [Tooltip("是否存在一笔画解。手搓编辑器/生成器保存时写入；不可解的关卡在管理窗口会被标注。")]
+    public bool solvable = true;
+
+    [Tooltip("生成器/编辑器估计的难度：0 最易 ~ 1 最难。")]
     public float difficulty;
 
     [Tooltip("可玩格子总数（需踩满的格数）。")]
