@@ -86,28 +86,10 @@ public class GridManager : MonoBehaviour
         }
 
         CountFillableCells();
-
-        CenterCamera();
-
+        // 取景由 CameraFitter 负责，GameInitializer 在此之后调用
     }
 
     public Vector2Int GetPlayerStartPos() => playerStartPos;
-
-    private void BuildGrid()
-    {
-        cellStates = new CellState[gridWidth, gridHeight];
-        cellRenderers = new SpriteRenderer[gridWidth, gridHeight];
-
-        for (int x = 0; x < gridWidth; x++)
-        {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                CreateCell(x, y);
-            }
-        }
-
-        CenterCamera();
-    }
 
     private void CreateCell(int x, int y)
     {
@@ -172,8 +154,7 @@ public class GridManager : MonoBehaviour
 
         cellStates[gridPos.x, gridPos.y] = CellState.Visited;
         cellRenderers[gridPos.x, gridPos.y].color = colorVisited;
-        visitedCount++;    // 新增
-
+        visitedCount++;
     }
 
     public CellState GetState(Vector2Int gridPos)
@@ -298,14 +279,6 @@ public class GridManager : MonoBehaviour
     {
         return gridPos.x >= 0 && gridPos.x < gridWidth &&
                gridPos.y >= 0 && gridPos.y < gridHeight;
-    }
-
-
-    private void CenterCamera()
-    {
-        if (Camera.main == null) return;
-        Camera.main.transform.position = new Vector3(0f, 0f, -10f);
-        Camera.main.orthographicSize = Mathf.Max(gridWidth, gridHeight) * cellSize * 0.65f;
     }
 
     private Sprite CreateWhiteSquareSprite()
