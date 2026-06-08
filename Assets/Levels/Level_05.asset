@@ -12,37 +12,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b545ebc6f246174f90b4830bc6f899f, type: 3}
   m_Name: Level_05
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
-  levelName: "\u5173\u53615"
+  levelName: Level_05
   description: 
-  layout: 'XXXXX...
+  layout: 'XX..XXXX
 
-    XXXXX...
+    ........
 
-    XXXXXX..
+    .......S
 
-    XXX.....
+    XX...XXX
 
-    XXX..XG.
+    X..X..XX
 
-    XXXX....
+    X...G.XX
 
-    XXXXXXX.
+    ..X...XX
 
-    XXXXXXX.
+    ....X..X
 
-    XXXXXXX.
+    ..X.X..X
 
-    S.......
-
-    ........'
-  solutionMoves: 
+    XXX...XX'
+  solutionMoves: ULDLULDLUULDLLDRRDRRDRDDDRDLDLLUULLDLUURUURDRDRU
   enemies: []
   requireAllVisited: 1
-  curationScore: 2
-  isFavorite: 0
+  curationScore: 5
+  isFavorite: 1
   finalOrder: 0
-  source: 
-  difficulty: 0
-  cells: 0
+  source: manual
+  solvable: 1
+  difficulty: 1
+  cells: 49
   interiorPillars: 0
   chokepoints: 0

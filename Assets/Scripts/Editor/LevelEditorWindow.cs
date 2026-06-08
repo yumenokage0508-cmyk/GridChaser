@@ -32,6 +32,10 @@ public class LevelEditorWindow : EditorWindow
     private bool boxing;
     private Vector2Int boxStart, boxEnd;
 
+    // 导入"从已有关卡载入"用的对象选择器
+    private int pickerId = -1;
+    private bool pendingPick;
+
     // ---- 校验缓存（避免每帧重算）----
     private OneStrokeSolver.Result lastResult;
     private float lastDifficulty;
@@ -51,13 +55,70 @@ public class LevelEditorWindow : EditorWindow
     private static readonly Color cBox = new Color(0.49f, 0.81f, 1f, 0.25f);
 
     [MenuItem("Tools/GridChaser/关卡编辑器(手搓)")]
-    public static void Open() => GetWindow<LevelEditorWindow>("关卡编辑器");
+    public static void Open()
+    {
+        var w = GetWindow<LevelEditorWindow>("关卡编辑器");
+        var sel = Selection.activeObject as LevelData;   // Project 里选中关卡则直接载入
+        if (sel != null) w.LoadFromLevelData(sel);
+    }
+
+    // 供关卡管理窗口【✎编辑】调用
+    public static void OpenWith(LevelData d)
+    {
+        var w = GetWindow<LevelEditorWindow>("关卡编辑器");
+        w.LoadFromLevelData(d);
+        w.Focus();
+    }
+
+    // 载入已有关卡资产（可覆盖保存它）
+    public void LoadFromLevelData(LevelData d)
+    {
+        if (d == null) return;
+        ParseLayout(d.layout);
+        editingAsset = d;
+        levelName = d.name;
+    }
+
+    // 载入粘贴的文本（视为全新关卡，只能另存为）
+    public void LoadFromLayoutText(string text)
+    {
+        ParseLayout(text);
+        editingAsset = null;
+    }
+
+    // 反解析：把 X.GS 字符串变回画布字典（保存的逆操作）。行号即 y，与保存/游戏读法一致。
+    private void ParseLayout(string layout)
+    {
+        cells.Clear(); start = null; goal = null;
+        if (!string.IsNullOrEmpty(layout))
+        {
+            string[] rows = layout.Replace("\r", "").Split('\n');
+            for (int y = 0; y < rows.Length; y++)
+            {
+                string row = rows[y];
+                for (int x = 0; x < row.Length; x++)
+                {
+                    char c = row[x];
+                    var p = new Vector2Int(x, y);
+                    if (c == 'S') { cells[p] = CellKind.Start; start = p; }
+                    else if (c == 'G') { cells[p] = CellKind.Goal; goal = p; }
+                    else if (c == '.') cells[p] = CellKind.Empty;
+                    // 'X'、空格、其它字符 = 墙，跳过
+                }
+            }
+        }
+        undo.Clear(); redo.Clear();
+        validateDirty = true;
+        pan = new Vector2(40, 40);
+        Repaint();
+    }
 
     private void OnGUI()
     {
         const float topH = 46, botH = 22;
         Rect canvas = new Rect(0, topH, position.width, position.height - topH - botH);
 
+        HandleImportPicker();
         DrawToolbar(new Rect(0, 0, position.width, topH));
         HandleCanvasEvents(canvas);
         DrawCanvas(canvas);
@@ -74,7 +135,24 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.LabelField("笔刷", GUILayout.Width(30));
         brush = (Brush)GUILayout.Toolbar((int)brush, new[] { "挖空", "填墙", "起点", "终点" }, GUILayout.Width(200));
 
-        GUILayout.Space(12);
+        GUILayout.Space(8);
+        if (GUILayout.Button("导入", EditorStyles.toolbarButton, GUILayout.Width(45)))
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("从已有关卡载入…"), false, () => pendingPick = true);
+            menu.AddItem(new GUIContent("粘贴 X.GS 文本载入…"), false, () => PasteLayoutWindow.Open(this));
+            menu.ShowAsContext();
+        }
+        if (GUILayout.Button("▶ 试玩", EditorStyles.toolbarButton, GUILayout.Width(50)))
+        {
+            if (editingAsset != null)
+            {
+                LevelData target = editingAsset;
+                EditorApplication.delayCall += () => LevelPlaytest.StartPlaytest(target);
+            }
+            else EditorUtility.DisplayDialog("先保存", "新关卡需要先『另存为』成资产后才能试玩。", "确定");
+        }
+        GUILayout.Space(8);
         if (GUILayout.Button("撤回", EditorStyles.toolbarButton, GUILayout.Width(45))) Undo();
         if (GUILayout.Button("重做", EditorStyles.toolbarButton, GUILayout.Width(45))) Redo();
         if (GUILayout.Button("清空", EditorStyles.toolbarButton, GUILayout.Width(45))) ResetCanvas();
@@ -103,6 +181,24 @@ public class LevelEditorWindow : EditorWindow
             "（左键画 / 右键框选 / Alt 临时切挖空填墙 / 中键平移 / 滚轮缩放 / Ctrl+Z 撤回 / Ctrl+Y 重做）",
             EditorStyles.miniLabel);
         GUILayout.EndArea();
+    }
+
+    // ---------- 导入：从已有关卡载入（对象选择器）----------
+    private void HandleImportPicker()
+    {
+        if (pendingPick && Event.current.type == EventType.Layout)
+        {
+            pendingPick = false;
+            pickerId = GUIUtility.GetControlID(FocusType.Passive);
+            EditorGUIUtility.ShowObjectPicker<LevelData>(null, false, "", pickerId);
+        }
+        if (pickerId != -1 && Event.current.commandName == "ObjectSelectorClosed"
+            && EditorGUIUtility.GetObjectPickerControlID() == pickerId)
+        {
+            var picked = EditorGUIUtility.GetObjectPickerObject() as LevelData;
+            pickerId = -1;
+            if (picked != null) LoadFromLevelData(picked);
+        }
     }
 
     // ---------- 校验 ----------
@@ -416,6 +512,37 @@ public class LevelEditorWindow : EditorWindow
     {
         foreach (char c in System.IO.Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
         return name;
+    }
+}
+
+// 粘贴文本载入的小弹窗
+public class PasteLayoutWindow : EditorWindow
+{
+    private LevelEditorWindow owner;
+    private string text = "";
+    private Vector2 scroll;
+
+    public static void Open(LevelEditorWindow owner)
+    {
+        var w = GetWindow<PasteLayoutWindow>(true, "粘贴关卡文本", true);
+        w.owner = owner;
+        w.minSize = new Vector2(340, 280);
+    }
+
+    private void OnGUI()
+    {
+        EditorGUILayout.LabelField("粘贴 X . G S 地图（X=墙  .=空地  S=起点  G=终点）", EditorStyles.boldLabel);
+        EditorGUILayout.Space(2);
+        scroll = EditorGUILayout.BeginScrollView(scroll);
+        text = EditorGUILayout.TextArea(text, GUILayout.ExpandHeight(true));
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("载入到编辑器"))
+        {
+            if (owner != null) { owner.LoadFromLayoutText(text); owner.Focus(); Close(); }
+        }
+        if (GUILayout.Button("取消")) Close();
+        EditorGUILayout.EndHorizontal();
     }
 }
 #endif

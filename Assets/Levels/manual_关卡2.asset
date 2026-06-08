@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   layout: 'XXXXXS
 
-    XXXXX.
+    XX.XX.
 
     X..XX.
 
@@ -30,7 +30,8 @@ MonoBehaviour:
   isFavorite: 0
   finalOrder: 0
   source: manual
+  solvable: 0
   difficulty: 0
-  cells: 15
+  cells: 16
   interiorPillars: 0
   chokepoints: 0

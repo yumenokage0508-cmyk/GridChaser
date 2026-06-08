@@ -42,10 +42,11 @@ MonoBehaviour:
   solutionMoves: RULUURDRDDRRRUUUUUUUUUUUULDDDDLUULLLDRRDDDLDDRRDRUULURU
   enemies: []
   requireAllVisited: 1
-  curationScore: 5
+  curationScore: 3
   isFavorite: 0
   finalOrder: 0
   source: generated
+  solvable: 1
   difficulty: 0.9467
   cells: 56
   interiorPillars: 3

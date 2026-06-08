@@ -13,6 +13,4 @@ MonoBehaviour:
   m_Name: LevelManifest
   m_EditorClassIdentifier: Assembly-CSharp::LevelManifest
   orderedLevels:
-  - {fileID: 11400000, guid: b2da06bd9d2501f49aeaba5e9fc7cbc9, type: 2}
-  - {fileID: 11400000, guid: 73ab83eb80e9bf243b8435144d3c2f6a, type: 2}
-  - {fileID: 11400000, guid: a912d95d23e155a45ab391ed853c34d8, type: 2}
+  - {fileID: 11400000, guid: beff0ad2f02e8ec449907d1bc64fd414, type: 2}

@@ -30,10 +30,11 @@ MonoBehaviour:
   solutionMoves: DRRRR
   enemies: []
   requireAllVisited: 1
-  curationScore: 4
-  isFavorite: 1
+  curationScore: 3
+  isFavorite: 0
   finalOrder: 1
   source: 
+  solvable: 1
   difficulty: 0
   cells: 0
   interiorPillars: 0

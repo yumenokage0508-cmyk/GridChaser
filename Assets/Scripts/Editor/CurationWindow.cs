@@ -163,6 +163,8 @@ public class CurationWindow : EditorWindow
         bool structural = false;
         bool wantConfirmRename = false;
 
+        Color oldBg = GUI.backgroundColor;
+        if (!l.solvable) GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);   // 不可解：行泛红
         EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
 
         bool sel = selected.Contains(l);
@@ -198,7 +200,7 @@ public class CurationWindow : EditorWindow
         }
 
         EditorGUILayout.LabelField(string.IsNullOrEmpty(l.source) ? "-" : l.source, GUILayout.Width(70));
-        EditorGUILayout.LabelField(l.difficulty.ToString("0.00"), GUILayout.Width(52));
+        EditorGUILayout.LabelField(l.solvable ? l.difficulty.ToString("0.00") : "不可解", GUILayout.Width(52));
         EditorGUILayout.LabelField(l.cells.ToString(), GUILayout.Width(44));
         EditorGUILayout.LabelField(l.chokepoints.ToString(), GUILayout.Width(44));
 
@@ -206,6 +208,13 @@ public class CurationWindow : EditorWindow
 
         bool fav = EditorGUILayout.ToggleLeft(" ", l.isFavorite, GUILayout.Width(54));
         if (fav != l.isFavorite) { l.isFavorite = fav; EditorUtility.SetDirty(l); dirty = true; }
+
+        // 编辑：用手搓编辑器载入这一关
+        if (GUILayout.Button("✎", GUILayout.Width(24)))
+        {
+            LevelData target = l;
+            EditorApplication.delayCall += () => LevelEditorWindow.OpenWith(target);
+        }
 
         // 试玩：点已选中行=对全部选中序列试玩；点未选中行=单关试玩
         if (GUILayout.Button("▶", GUILayout.Width(24)))
@@ -234,6 +243,7 @@ public class CurationWindow : EditorWindow
         }
 
         EditorGUILayout.EndHorizontal();
+        GUI.backgroundColor = oldBg;
 
         if (wantConfirmRename) structural = ConfirmRename(l) || structural;
         return structural;
