@@ -246,10 +246,8 @@ MonoBehaviour:
   gridWidth: 5
   gridHeight: 5
   cellSize: 1
-  colorNormal: {r: 0.165, g: 0.165, b: 0.165, a: 1}
-  colorVisited: {r: 0.361, g: 0.329, b: 0.569, a: 1}
-  colorGoal: {r: 0.961, g: 0.784, b: 0.259, a: 1}
-  colorWall: {r: 0.1, g: 0.1, b: 0.1, a: 1}
+  theme: {fileID: 11400000, guid: 85285774ab7bf4347bd92cd350d91b89, type: 2}
+  visitFadeDuration: 0.15
   currentLevel: {fileID: 0}
 --- !u!4 &661711816
 Transform:
@@ -340,7 +338,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be4f360da3f30634181cc7d3813a63fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  playerColor: {r: 0.494, g: 0.812, b: 1, a: 1}
+  moveDuration: 0.08
 --- !u!4 &1716714991
 Transform:
   m_ObjectHideFlags: 0
@@ -438,7 +436,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.101960786, g: 0.101960786, b: 0.101960786, a: 1}
+  m_BackGroundColor: {r: 0.5882353, g: 0.90588236, b: 0.8901961, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0

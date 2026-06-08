@@ -1,15 +1,19 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Player Settings")]
-    [SerializeField] private Color playerColor = new Color(0.494f, 0.812f, 1f);
+    [Header("Animation")]
+    [Tooltip("一步滑动到目标格的时长（秒）。越小越脆快，越大越柔。")]
+    [SerializeField] private float moveDuration = 0.08f;
 
     private Vector2Int gridPos;
     private SpriteRenderer sr;
     private Vector2Int prevGridPos;
     public Vector2Int PrevGridPos => prevGridPos;
+
+    private bool isMoving = false;   // 移动动画进行中：锁输入，避免连按错位
 
     public static PlayerController Instance { get; private set; }
 
@@ -32,20 +36,30 @@ public class PlayerController : MonoBehaviour
         {
             sr = gameObject.AddComponent<SpriteRenderer>();
             sr.sprite = CreateSquareSprite();
-            sr.color = playerColor;
             sr.sortingOrder = 2;
             transform.localScale = Vector3.one * GridManager.Instance.CellSize * 0.85f;
         }
+        sr.color = GridManager.Instance.PlayerColor;   // 玩家颜色来自配色主题
 
+        isMoving = false;
         gridPos = startPos;
         prevGridPos = startPos;
         transform.position = GridManager.Instance.GridToWorld(startPos);
+    }
+
+    // 运行中实时换肤：由 GridManager.ApplyThemeNow 调用
+    public void ApplyColor(Color c)
+    {
+        if (sr != null) sr.color = c;
     }
 
     private void Update()
     {
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
+
+        // 移动动画期间锁所有输入（含 Z/R/N/L），动画结束后自动解锁
+        if (isMoving) return;
 
         // 游戏结束（通关）后锁输入，避免重载前误操作
         if (GameManager.Instance.IsGameOver) return;
@@ -98,10 +112,13 @@ public class PlayerController : MonoBehaviour
         // 合法移动已确认，在改动任何状态之前先拍快照（供撤回）
         UndoManager.Instance.RecordTurn();
 
+        // —— 逻辑即时更新（与原来一致，不依赖动画）——
         Vector2Int prevPos = gridPos;
         prevGridPos = prevPos;
         gridPos = nextPos;
-        transform.position = GridManager.Instance.GridToWorld(gridPos);
+
+        // —— 视觉滑动：仅 transform 走协程，逻辑已经到位 ——
+        StartCoroutine(AnimateMove(transform.position, GridManager.Instance.GridToWorld(gridPos)));
 
         GridManager.Instance.SetVisited(prevPos);
 
@@ -115,7 +132,7 @@ public class PlayerController : MonoBehaviour
         EnemyManager.Instance?.OnPlayerMoved(dir);
         if (GameManager.Instance.IsGameOver) return;   // 敌人移动可能已触发死亡
 
-        // 通关判定
+        // 通关判定（即时；通关后 GameManager 会延迟 0.5s 重载，滑动动画在此期间播完）
         if (GridManager.Instance.GetState(gridPos) == GridManager.CellState.Goal)
         {
             bool allDone = !GridManager.Instance.CurrentLevel.requireAllVisited
@@ -127,15 +144,32 @@ public class PlayerController : MonoBehaviour
         // 卡死判负已移除：走进死路不再判负，玩家用 Z 撤回或 R 重开
     }
 
+    // 视觉滑动协程：把方块从 from 线性插值到 to，期间锁输入
+    private IEnumerator AnimateMove(Vector3 from, Vector3 to)
+    {
+        isMoving = true;
+        float t = 0f;
+        while (t < moveDuration)
+        {
+            t += Time.deltaTime;
+            transform.position = Vector3.Lerp(from, to, t / moveDuration);
+            yield return null;
+        }
+        transform.position = to;
+        isMoving = false;
+    }
+
     // 拍快照：保存玩家当前与上一步位置
     public PlayerSnapshot CaptureState()
     {
         return new PlayerSnapshot { gridPos = gridPos, prevGridPos = prevGridPos };
     }
 
-    // 恢复快照：写回位置并把方块摆回去
+    // 恢复快照：写回位置并把方块摆回去（撤回不可能在动画中触发，这里 isMoving 复位仅作防御）
     public void RestoreState(PlayerSnapshot snap)
     {
+        StopAllCoroutines();
+        isMoving = false;
         gridPos = snap.gridPos;
         prevGridPos = snap.prevGridPos;
         transform.position = GridManager.Instance.GridToWorld(gridPos);

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04df5d82d75d37141b686083a511b2f3, type: 3}
+  m_Name: Preset 2
+  m_EditorClassIdentifier: Assembly-CSharp::ColorTheme
+  background: {r: 0.102, g: 0.102, b: 0.102, a: 1}
+  normal: {r: 0.165, g: 0.165, b: 0.165, a: 1}
+  visited: {r: 0.361, g: 0.329, b: 0.569, a: 1}
+  goal: {r: 0.961, g: 0.784, b: 0.259, a: 1}
+  wall: {r: 0.29, g: 0.29, b: 0.322, a: 1}
+  player: {r: 0.494, g: 0.812, b: 1, a: 1}

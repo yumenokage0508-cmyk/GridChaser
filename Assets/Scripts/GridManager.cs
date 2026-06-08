@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class GridManager : MonoBehaviour
 {
@@ -8,16 +9,29 @@ public class GridManager : MonoBehaviour
     [SerializeField] private int gridHeight = 5;
     [SerializeField] private float cellSize = 1f;
 
-    [Header("Cell Colors")]
-    [SerializeField] private Color colorNormal = new Color(0.165f, 0.165f, 0.165f);
-    [SerializeField] private Color colorVisited = new Color(0.361f, 0.329f, 0.569f);
-    [SerializeField] private Color colorGoal = new Color(0.961f, 0.784f, 0.259f);
-    [SerializeField] private Color colorWall = new Color(0.1f, 0.1f, 0.1f);
+    [Header("Theme")]
+    [Tooltip("配色主题资产。换肤/对比时拖入不同的 ColorTheme；运行中改完可右键组件→Apply Theme Now 实时生效。")]
+    [SerializeField] private ColorTheme theme;
+
+    [Header("Animation")]
+    [Tooltip("踩过格子变色的渐变时长（秒）。")]
+    [SerializeField] private float visitFadeDuration = 0.15f;
 
     [Header("Level")]
     [SerializeField] private LevelData currentLevel;
 
     public LevelData CurrentLevel => currentLevel;
+
+    // 实际使用的颜色（从 theme 缓存而来；theme 为空时用下面这组默认值兜底）
+    private Color colorNormal = new Color(0.165f, 0.165f, 0.165f);
+    private Color colorVisited = new Color(0.361f, 0.329f, 0.569f);
+    private Color colorGoal = new Color(0.961f, 0.784f, 0.259f);
+    private Color colorWall = new Color(0.290f, 0.290f, 0.322f);
+    private Color colorBackground = new Color(0.102f, 0.102f, 0.102f);
+    private Color colorPlayer = new Color(0.494f, 0.812f, 1f);
+
+    // 供 PlayerController 读取（玩家颜色也由主题统一管理）
+    public Color PlayerColor => colorPlayer;
 
     private Vector2Int playerStartPos;
     private int totalFillableCells = 0;   // 关卡内可填格子总数（分母）
@@ -36,6 +50,7 @@ public class GridManager : MonoBehaviour
     // 内部数据
     private CellState[,] cellStates;
     private SpriteRenderer[,] cellRenderers;
+    private Coroutine[,] colorTweens;     // 每格正在跑的变色协程，便于撤回时打断
 
     // 单例
     public static GridManager Instance { get; private set; }
@@ -51,7 +66,8 @@ public class GridManager : MonoBehaviour
 
     public void LoadLevel(LevelData level)
     {
-        // 清除旧格子
+        CacheTheme();          // 先把主题颜色缓存进各 colorXxx 字段
+        StopAllColorTweens();  // 停掉旧关卡残留的变色协程
         foreach (Transform child in transform)
             Destroy(child.gameObject);
 
@@ -66,6 +82,7 @@ public class GridManager : MonoBehaviour
 
         cellStates = new CellState[gridWidth, gridHeight];
         cellRenderers = new SpriteRenderer[gridWidth, gridHeight];
+        colorTweens = new Coroutine[gridWidth, gridHeight];
 
         for (int y = 0; y < gridHeight; y++)
         {
@@ -86,6 +103,7 @@ public class GridManager : MonoBehaviour
         }
 
         CountFillableCells();
+        ApplyBackground();
         // 取景由 CameraFitter 负责，GameInitializer 在此之后调用
     }
 
@@ -147,14 +165,15 @@ public class GridManager : MonoBehaviour
     }
 
 
+    // 踩过格子：逻辑即时置为 Visited 并计数；颜色走渐变协程（视觉追赶）
     public void SetVisited(Vector2Int gridPos)
     {
         if (!IsInBounds(gridPos)) return;
         if (cellStates[gridPos.x, gridPos.y] != CellState.Normal) return;
 
         cellStates[gridPos.x, gridPos.y] = CellState.Visited;
-        cellRenderers[gridPos.x, gridPos.y].color = colorVisited;
         visitedCount++;
+        StartColorTween(gridPos.x, gridPos.y, colorVisited);
     }
 
     public CellState GetState(Vector2Int gridPos)
@@ -247,9 +266,10 @@ public class GridManager : MonoBehaviour
         };
     }
 
-    // 恢复快照：写回每个格子的状态并重新着色，最后还原计数
+    // 恢复快照：先停掉所有变色协程（防止半截渐变把颜色覆盖回去），再写回状态并瞬时着色
     public void RestoreState(GridSnapshot snap)
     {
+        StopAllColorTweens();
         for (int x = 0; x < gridWidth; x++)
             for (int y = 0; y < gridHeight; y++)
             {
@@ -259,7 +279,7 @@ public class GridManager : MonoBehaviour
         visitedCount = snap.visitedCount;
     }
 
-    // 按当前状态刷新单个格子的颜色（撤回时复原视觉）
+    // 按当前状态刷新单个格子的颜色（撤回/换肤时瞬时复原视觉）
     private void RefreshCellColor(int x, int y)
     {
         Color c;
@@ -271,6 +291,83 @@ public class GridManager : MonoBehaviour
             default: c = colorNormal; break;
         }
         cellRenderers[x, y].color = c;
+    }
+
+
+    // ===== 配色主题 =====
+
+    // 把主题资产里的颜色复制到各 colorXxx 字段；theme 为空则保留默认值
+    private void CacheTheme()
+    {
+        if (theme == null) return;
+        colorNormal = theme.normal;
+        colorVisited = theme.visited;
+        colorGoal = theme.goal;
+        colorWall = theme.wall;
+        colorBackground = theme.background;
+        colorPlayer = theme.player;
+    }
+
+    // 设置相机背景色
+    private void ApplyBackground()
+    {
+        if (Camera.main != null) Camera.main.backgroundColor = colorBackground;
+    }
+
+    // 运行中实时换肤：重新缓存主题 → 重置背景/全部格子/玩家颜色，无需重启。
+    // 右键 GridManager 组件标题 → Apply Theme Now 调用。
+    [ContextMenu("Apply Theme Now")]
+    public void ApplyThemeNow()
+    {
+        CacheTheme();
+        ApplyBackground();
+
+        StopAllColorTweens();
+        if (cellRenderers != null)
+            for (int x = 0; x < gridWidth; x++)
+                for (int y = 0; y < gridHeight; y++)
+                    RefreshCellColor(x, y);
+
+        if (PlayerController.Instance != null)
+            PlayerController.Instance.ApplyColor(colorPlayer);
+    }
+
+
+    // ===== 格子变色渐变 =====
+
+    // 启动一格的变色渐变；若该格已有渐变在跑，先停掉避免叠加
+    private void StartColorTween(int x, int y, Color target)
+    {
+        if (colorTweens[x, y] != null) StopCoroutine(colorTweens[x, y]);
+        colorTweens[x, y] = StartCoroutine(ColorTween(x, y, target));
+    }
+
+    private IEnumerator ColorTween(int x, int y, Color target)
+    {
+        SpriteRenderer sr = cellRenderers[x, y];
+        Color from = sr.color;
+        float t = 0f;
+        while (t < visitFadeDuration)
+        {
+            t += Time.deltaTime;
+            sr.color = Color.Lerp(from, target, t / visitFadeDuration);
+            yield return null;
+        }
+        sr.color = target;
+        colorTweens[x, y] = null;
+    }
+
+    // 停掉所有正在跑的变色协程（按数组实际尺寸遍历，兼容关卡换尺寸）
+    private void StopAllColorTweens()
+    {
+        if (colorTweens == null) return;
+        for (int x = 0; x < colorTweens.GetLength(0); x++)
+            for (int y = 0; y < colorTweens.GetLength(1); y++)
+                if (colorTweens[x, y] != null)
+                {
+                    StopCoroutine(colorTweens[x, y]);
+                    colorTweens[x, y] = null;
+                }
     }
 
 
