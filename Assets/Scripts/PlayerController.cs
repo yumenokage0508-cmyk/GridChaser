@@ -58,6 +58,9 @@ public class PlayerController : MonoBehaviour
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
 
+        // 还停在主菜单（未点"开始"）时不接受游戏输入
+        if (!GameManager.Instance.HasStarted) return;
+
         // 移动动画期间锁所有输入（含 Z/R/N/L），动画结束后自动解锁
         if (isMoving) return;
 

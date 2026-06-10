@@ -22,6 +22,11 @@ public class GameManager : MonoBehaviour
     private bool isGameOver = false;
     public bool IsGameOver => isGameOver;
 
+    // 是否已点过主菜单"开始"。跨场景持有（DontDestroyOnLoad），关卡重载后保持 true，
+    // 使 UIManager 重载后直接进游戏界面而不是弹回主菜单。
+    private bool hasStarted = false;
+    public bool HasStarted => hasStarted;
+
     // 正式关卡序列（从清单读）
     private LevelData[] Levels => manifest != null ? manifest.orderedLevels : null;
 
@@ -46,6 +51,15 @@ public class GameManager : MonoBehaviour
             if (list.Count > 0) { playtestLevels = list.ToArray(); playtestIndex = 0; }
         }
 #endif
+
+        // 试玩模式跳过主菜单：直接算作已开始，进 Play 即可操作关卡
+        if (IsPlaytestMode) hasStarted = true;
+    }
+
+    // 主菜单"开始"按钮触发：标记游戏已开始（UIManager 负责切界面）
+    public void StartGame()
+    {
+        hasStarted = true;
     }
 
     public LevelData GetCurrentLevel()
